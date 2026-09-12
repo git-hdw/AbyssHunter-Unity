@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: dff0850677079b9429ff04043e91a1e3
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 31900000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 290681
+  packageName: KayKit - Free Sample Pack (for Unity)
+  packageVersion: 1.1.1
+  assetPath: Assets/KayKit/Characters/Animations/Avatars/Masks/Rig_Large_Handslots_Mask.mask
+  uploadId: 832008

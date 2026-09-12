@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ce6eb580a886aba448427a60f3433263
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 290681
+  packageName: KayKit - Free Sample Pack (for Unity)
+  packageVersion: 1.1.1
+  assetPath: Assets/KayKit/Characters/Animations/Animations/Rig_Large/Combat Melee/Melee_Dualwield_SlashCombo.anim
+  uploadId: 832008

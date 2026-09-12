@@ -1,0 +1,13 @@
+Abyss Hunter 简历要点（勿放进 README）
+
+项目经历｜Abyss Hunter（Unity 6 / URP，独立开发）
+
+独立完成 3D 俯视角动作原型并导出 Windows 正式包。敌人使用 Addressables 异步加载与对象池预热，死亡回收复用；AI 为 Idle/Chase/Attack 有限状态机 + NavMesh。近战伤害由动画事件在命中帧触发，并配合击退、顿帧、闪白与飘字。流程含主菜单、暂停、胜利/失败互斥结算；存档为本局内存检查点。用 Profiler 确认战斗帧无明显脚本瓶颈与持续 GC，再打非 Development 包。
+
+面试可展开：
+- Addressables 异步加载 Prefab + 对象池预热
+- 敌人 FSM（Idle / Chase / Attack）+ NavMesh
+- 动画事件命中，而不是按下瞬间结算
+- 结算互斥，避免 Game Over 与 Victory 同时出现
+- 本局内存检查点，不写永久 JSON
+- Profiler 核查 CPU / GC Alloc

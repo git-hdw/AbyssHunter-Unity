@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 7090b11d2d7e1f042919a36fd005f28d
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 290681
+  packageName: KayKit - Free Sample Pack (for Unity)
+  packageVersion: 1.1.1
+  assetPath: Assets/KayKit/Characters/Animations/Animations/Rig_Medium/Tools/Work_C.anim
+  uploadId: 832008

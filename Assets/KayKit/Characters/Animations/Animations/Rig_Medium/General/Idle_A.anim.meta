@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: cb6875923afe3684d83ad12bed831fce
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 7400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 290681
+  packageName: KayKit - Free Sample Pack (for Unity)
+  packageVersion: 1.1.1
+  assetPath: Assets/KayKit/Characters/Animations/Animations/Rig_Medium/General/Idle_A.anim
+  uploadId: 832008
