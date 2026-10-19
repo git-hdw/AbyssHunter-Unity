@@ -103,6 +103,20 @@ namespace AbyssHunter.Inventory
             return true;
         }
 
+        public bool TryConsume(ItemData item, int quantity)
+        {
+            if (item == null || quantity <= 0 || GetTotalQuantity(item) < quantity) return false;
+            for (int i = 0; i < slots.Length && quantity > 0; i++)
+            {
+                if (slots[i].IsEmpty || slots[i].Item != item) continue;
+                int amount = Mathf.Min(quantity, slots[i].Quantity);
+                slots[i].Remove(amount);
+                quantity -= amount;
+            }
+            Changed?.Invoke();
+            return true;
+        }
+
         public List<InventorySlotSaveData> CaptureSaveData()
         {
             List<InventorySlotSaveData> data = new(slots.Length);

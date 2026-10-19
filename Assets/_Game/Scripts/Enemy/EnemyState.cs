@@ -4,6 +4,9 @@ namespace AbyssHunter.Enemy
     {
         Idle,
         Chase,
-        Attack
+        Attack,
+        Windup,
+        Strike,
+        Recovery
     }
 }

@@ -16,6 +16,13 @@ namespace AbyssHunter.Character
         private float shakeIntensity;
         private float shakeRoll;
 
+        private void Start()
+        {
+            if (target == null) return;
+            transform.position = target.position + offset;
+            transform.LookAt(target.position + Vector3.up);
+        }
+
         public void Shake(float duration, float intensity)
         {
             if (duration >= shakeRemaining || intensity >= shakeIntensity)

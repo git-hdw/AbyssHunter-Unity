@@ -13,6 +13,8 @@ namespace AbyssHunter.Inventory
         [SerializeField, Min(0f)] private float bobSpeed = 3f;
 
         private Vector3 basePosition;
+        private PlayerInventory nearbyInventory;
+        public ItemData Item => item;
 
         private void Awake()
         {
@@ -24,15 +26,21 @@ namespace AbyssHunter.Inventory
             body.useGravity = false;
 
             basePosition = transform.position;
+            nearbyInventory = FindFirstObjectByType<PlayerInventory>();
         }
 
         private void Update()
         {
+            if (AbyssHunter.UI.GamePresentation.BlocksGameplay) return;
             transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.World);
 
             Vector3 position = basePosition;
             position.y += Mathf.Sin(Time.time * bobSpeed) * bobHeight;
             transform.position = position;
+            if (item != null && item.ItemId == "abyss_shard" && nearbyInventory != null &&
+                !nearbyInventory.GetComponent<AbyssHunter.Combat.Health>().IsDead &&
+                Vector3.Distance(nearbyInventory.transform.position, transform.position) < 2.4f)
+                Collect(nearbyInventory);
         }
 
         public void Initialize(ItemData itemData, int itemQuantity)
@@ -45,6 +53,13 @@ namespace AbyssHunter.Inventory
         private void OnTriggerEnter(Collider other)
         {
             PlayerInventory inventory = other.GetComponentInParent<PlayerInventory>();
+            Collect(inventory);
+        }
+
+        private void Collect(PlayerInventory inventory)
+        {
+            if (AbyssHunter.UI.GamePresentation.BlocksGameplay || quantity <= 0 ||
+                (inventory != null && inventory.GetComponent<AbyssHunter.Combat.Health>().IsDead)) return;
             if (inventory == null || item == null)
             {
                 return;

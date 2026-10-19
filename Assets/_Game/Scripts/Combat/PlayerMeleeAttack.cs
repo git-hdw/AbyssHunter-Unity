@@ -28,6 +28,8 @@ namespace AbyssHunter.Combat
         private float nextAttackTime;
         private float queuedAttackUntil = float.NegativeInfinity;
         private bool attackDamagePending;
+        private AbyssHunter.Character.PlayerMovement movement;
+        private Health health;
 
         public event Action Attacked;
         public event Action<bool> HitConfirmed;
@@ -35,16 +37,43 @@ namespace AbyssHunter.Combat
         private void Awake()
         {
             mainCamera = Camera.main;
+            movement = GetComponent<AbyssHunter.Character.PlayerMovement>();
+            health = GetComponent<Health>();
+        }
+
+        private void OnEnable()
+        {
+            if (movement != null) movement.DodgeStarted += CancelAttack;
+            if (health != null) health.Died += CancelAttack;
+        }
+
+        private void OnDisable()
+        {
+            if (movement != null) movement.DodgeStarted -= CancelAttack;
+            if (health != null) health.Died -= CancelAttack;
+            CancelAttack();
+        }
+
+        private void CancelAttack()
+        {
+            attackDamagePending = false;
+            queuedAttackUntil = float.NegativeInfinity;
         }
 
         private void Update()
         {
+            if (AbyssHunter.UI.GamePresentation.BlocksGameplay || AbyssHunter.UI.MatchResult.HasEnded)
+            {
+                queuedAttackUntil = float.NegativeInfinity;
+                return;
+            }
             Mouse mouse = Mouse.current;
             if (mouse != null && mouse.leftButton.wasPressedThisFrame)
             {
                 queuedAttackUntil = Time.time + inputBufferTime;
             }
 
+            if (movement != null && movement.IsDodging) return;
             if (Time.time <= queuedAttackUntil && Time.time >= nextAttackTime)
             {
                 queuedAttackUntil = float.NegativeInfinity;
@@ -67,7 +96,8 @@ namespace AbyssHunter.Combat
 
         public void ApplyAttackDamage()
         {
-            if (!attackDamagePending)
+            if (!attackDamagePending || (movement != null && movement.IsDodging) ||
+                (health != null && health.IsDead) || AbyssHunter.UI.MatchResult.HasEnded)
             {
                 return;
             }
@@ -161,7 +191,8 @@ namespace AbyssHunter.Combat
             {
                 Collider hit = hitBuffer[i];
                 if (hit.transform.root == transform.root ||
-                    hit.GetComponentInParent<IDamageable>() == null)
+                    hit.GetComponentInParent<IDamageable>() == null ||
+                    (hit.GetComponentInParent<Health>() is Health candidate && candidate.IsDead))
                 {
                     continue;
                 }

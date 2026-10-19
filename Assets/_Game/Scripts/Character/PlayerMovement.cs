@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace AbyssHunter.Character
 {
+    [DefaultExecutionOrder(-20)]
     [RequireComponent(typeof(CharacterController))]
     public sealed class PlayerMovement : MonoBehaviour
     {
@@ -35,6 +36,8 @@ namespace AbyssHunter.Character
         private bool isDodging;
 
         public event Action DodgeStarted;
+        public bool IsDodging => isDodging;
+        public float DodgeReadiness => Mathf.Clamp01(1f - (nextDodgeTime - Time.time) / dodgeCooldown);
 
         private void Awake()
         {
@@ -51,6 +54,7 @@ namespace AbyssHunter.Character
 
         private void Update()
         {
+            if (AbyssHunter.UI.GamePresentation.BlocksGameplay || (health != null && health.IsDead)) return;
             if (transform.position.y < fallThreshold)
             {
                 RespawnAfterFall();

@@ -43,6 +43,9 @@ namespace AbyssHunter.Enemy
             Vector2 randomOffset = Random.insideUnitCircle * 0.5f;
             Vector3 spawnPosition = transform.position +
                                     new Vector3(randomOffset.x, 0.5f, randomOffset.y);
+            // Keep rewards reachable when a killing blow knocks an enemy against the platform edge.
+            if (UnityEngine.AI.NavMesh.SamplePosition(spawnPosition, out var hit, 4, UnityEngine.AI.NavMesh.AllAreas))
+                spawnPosition = hit.position + Vector3.up * .65f;
 
             PickupItem pickup = Instantiate(
                 pickupPrefab,

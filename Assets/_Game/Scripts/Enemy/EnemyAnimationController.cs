@@ -40,6 +40,7 @@ namespace AbyssHunter.Enemy
 
             if (animator != null)
             {
+                animator.speed = 1;
                 animator.Rebind();
                 animator.Update(0f);
             }
@@ -47,6 +48,7 @@ namespace AbyssHunter.Enemy
 
         private void OnDisable()
         {
+            if (animator != null) animator.speed = 1;
             controller.Attacked -= PlayAttack;
             health.Damaged -= PlayHit;
             health.Died -= PlayDeath;
@@ -57,6 +59,26 @@ namespace AbyssHunter.Enemy
             if (animator == null)
             {
                 return;
+            }
+
+            if (!health.IsDead && controller.IsHeavyAttacking)
+            {
+                var profile = controller.HeavyAttack;
+                float pose;
+                if (controller.CurrentState == EnemyState.Windup)
+                    pose = Mathf.Lerp(0, profile.animationContact, Mathf.Clamp01(controller.PhaseElapsed / profile.windup));
+                else if (controller.CurrentState == EnemyState.Strike)
+                    pose = Mathf.Lerp(profile.animationContact, .55f, Mathf.Clamp01(controller.PhaseElapsed / profile.strikeDuration));
+                else
+                    pose = Mathf.Lerp(.55f, .99f, Mathf.Clamp01(controller.PhaseElapsed / controller.RecoveryDuration));
+                animator.speed = 0;
+                animator.Play("HeavySwing", 0, pose);
+                return;
+            }
+            if (animator.speed == 0)
+            {
+                animator.speed = 1;
+                animator.Play(health.IsDead ? "Death_A" : "Idle_A", 0, 0);
             }
 
             Vector3 velocity = agent.velocity;
@@ -71,7 +93,7 @@ namespace AbyssHunter.Enemy
 
         private void PlayHit()
         {
-            if (!health.IsDead)
+            if (!health.IsDead && !controller.IsHeavyAttacking)
             {
                 animator?.SetTrigger(HitHash);
             }
@@ -79,6 +101,7 @@ namespace AbyssHunter.Enemy
 
         private void PlayDeath()
         {
+            if (animator != null) animator.speed = 1;
             animator?.SetTrigger(DieHash);
         }
     }

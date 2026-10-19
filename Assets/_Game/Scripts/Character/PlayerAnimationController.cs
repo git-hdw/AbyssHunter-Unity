@@ -70,6 +70,7 @@ namespace AbyssHunter.Character
 
         private void PlayDodge()
         {
+            animator?.ResetTrigger(AttackHash);
             animator?.SetTrigger(DodgeHash);
         }
 

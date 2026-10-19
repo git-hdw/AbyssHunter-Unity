@@ -22,7 +22,7 @@ namespace AbyssHunter.UI
             instance.transform.position = position;
 
             TextMesh text = instance.AddComponent<TextMesh>();
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font font = GameFont.Chinese;
 
             text.text = value.ToString("+0;-0;0");
             text.anchor = TextAnchor.MiddleCenter;

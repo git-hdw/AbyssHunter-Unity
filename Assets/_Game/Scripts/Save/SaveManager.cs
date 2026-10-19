@@ -1,5 +1,6 @@
 using AbyssHunter.Combat;
 using AbyssHunter.Inventory;
+using AbyssHunter.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -40,9 +41,10 @@ namespace AbyssHunter.Save
 
         public void SaveGame()
         {
-            if (!ReferencesAreValid() || playerHealth.IsDead)
+            if (FindFirstObjectByType<AbyssHunter.World.AbyssExpedition>() != null) return;
+            if (!ReferencesAreValid() || playerHealth.IsDead || MatchResult.HasEnded)
             {
-                Debug.LogWarning("玩家已死亡或存档引用不完整，本次未保存。", this);
+                Debug.LogWarning("玩家已死亡、对局已结束或存档引用不完整，本次未保存。", this);
                 return;
             }
 
@@ -64,9 +66,17 @@ namespace AbyssHunter.Save
 
         public void LoadGame()
         {
+            if (FindFirstObjectByType<AbyssHunter.World.AbyssExpedition>() != null) return;
             if (!ReferencesAreValid())
             {
                 Debug.LogWarning("存档引用没有配置完整。", this);
+                return;
+            }
+
+            // A checkpoint only restores player data, not the completed match or death lifecycle.
+            if (playerHealth.IsDead || MatchResult.HasEnded)
+            {
+                Debug.Log("对局已结束或玩家已死亡，无法回滚检查点。请按 R 重开或按 M 返回菜单。", this);
                 return;
             }
 

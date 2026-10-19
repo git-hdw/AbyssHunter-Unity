@@ -20,6 +20,7 @@ namespace AbyssHunter.Enemy
         [SerializeField, Min(1)] private int damage = 10;
         [SerializeField, Min(0.1f)] private float attackCooldown = 1f;
         [SerializeField, Min(0f)] private float turnSpeed = 10f;
+        [SerializeField] private HeavyAttackProfile heavyAttack;
 
         private NavMeshAgent agent;
         private IDamageable targetDamageable;
@@ -29,19 +30,39 @@ namespace AbyssHunter.Enemy
         private bool attackDamagePending;
         private bool isKnockedBack;
         private Coroutine knockbackCoroutine;
+        private Health health;
+        private float phaseElapsed;
+        private float recoveryBonus;
+        private bool recoveryStaggerUsed;
+        private readonly RaycastHit[] obstructionHits = new RaycastHit[16];
 
         public EnemyState CurrentState => currentState;
         public event Action Attacked;
+        public event Action<EnemyState> StateChanged;
+        public event Action HeavyImpact;
+        public HeavyAttackProfile HeavyAttack => heavyAttack;
+        public bool IsHeavy => heavyAttack != null;
+        public bool IsArmored => IsHeavy && (currentState == EnemyState.Windup || currentState == EnemyState.Strike);
+        public bool IsHeavyAttacking => IsHeavy && (IsArmored || currentState == EnemyState.Recovery);
+        public float PhaseElapsed => phaseElapsed;
+        public float RecoveryDuration => IsHeavy ? heavyAttack.recovery + recoveryBonus : 0;
 
         private void Awake()
         {
             agent = GetComponent<NavMeshAgent>();
+            health = GetComponent<Health>();
         }
 
         private void OnEnable()
         {
             nextAttackTime = 0f;
             isAlerted = false;
+            phaseElapsed = 0;
+            recoveryBonus = 0;
+            recoveryStaggerUsed = false;
+            attackDamagePending = false;
+            targetDamageable = null;
+            target = null;
             ChangeState(EnemyState.Idle);
         }
 
@@ -54,6 +75,8 @@ namespace AbyssHunter.Enemy
             }
 
             isKnockedBack = false;
+            attackDamagePending = false;
+            ChangeState(EnemyState.Idle);
 
             if (agent != null && agent.isOnNavMesh)
             {
@@ -81,6 +104,12 @@ namespace AbyssHunter.Enemy
 
         private void Update()
         {
+            if (health != null && health.IsDead) return;
+            if (IsHeavyAttacking)
+            {
+                UpdateHeavyAttack();
+                return;
+            }
             if (target == null || isKnockedBack)
             {
                 return;
@@ -118,9 +147,16 @@ namespace AbyssHunter.Enemy
                 return;
             }
 
-            if (distanceToTarget <= attackRange)
+            if (distanceToTarget <= (IsHeavy ? heavyAttack.triggerDistance : attackRange))
             {
-                ChangeState(EnemyState.Attack);
+                if (IsHeavy)
+                {
+                    FaceTarget();
+                    recoveryBonus = 0;
+                    recoveryStaggerUsed = false;
+                    ChangeState(EnemyState.Windup);
+                }
+                else ChangeState(EnemyState.Attack);
                 return;
             }
 
@@ -150,6 +186,8 @@ namespace AbyssHunter.Enemy
 
         public void ApplyAttackDamage()
         {
+            // Heavy attacks are committed by their phase clock, never by legacy clip events.
+            if (IsHeavy || !isActiveAndEnabled || (health != null && health.IsDead)) return;
             if (!attackDamagePending || target == null)
             {
                 return;
@@ -175,12 +213,26 @@ namespace AbyssHunter.Enemy
             float distance,
             float duration)
         {
+            TryApplyKnockback(direction, distance, duration);
+        }
+
+        public bool TryApplyKnockback(Vector3 direction, float distance, float duration)
+        {
             if (!isActiveAndEnabled ||
+                (health != null && health.IsDead) || IsArmored ||
                 distance <= 0f ||
                 duration <= 0f ||
                 direction.sqrMagnitude < 0.001f)
             {
-                return;
+                return false;
+            }
+
+            if (IsHeavy && currentState == EnemyState.Recovery)
+            {
+                if (recoveryStaggerUsed) return false;
+                recoveryStaggerUsed = true;
+                recoveryBonus = heavyAttack.recoveryStaggerBonus;
+                distance *= .65f;
             }
 
             if (knockbackCoroutine != null)
@@ -190,6 +242,7 @@ namespace AbyssHunter.Enemy
 
             knockbackCoroutine = StartCoroutine(
                 KnockbackRoutine(direction.normalized, distance, duration));
+            return true;
         }
 
         private IEnumerator KnockbackRoutine(
@@ -227,27 +280,79 @@ namespace AbyssHunter.Enemy
 
             isKnockedBack = false;
             knockbackCoroutine = null;
-            ChangeState(currentState);
+            SetAgentMotion();
         }
 
         private void ChangeState(EnemyState newState)
         {
             currentState = newState;
+            phaseElapsed = 0;
 
             if (newState != EnemyState.Attack)
             {
                 attackDamagePending = false;
             }
 
+            SetAgentMotion();
+            StateChanged?.Invoke(newState);
+        }
+
+        private void SetAgentMotion()
+        {
             if (agent != null && agent.isOnNavMesh)
             {
-                agent.isStopped = newState != EnemyState.Chase;
+                agent.isStopped = currentState != EnemyState.Chase;
 
                 if (agent.isStopped)
                 {
                     agent.ResetPath();
                 }
             }
+        }
+
+        private void UpdateHeavyAttack()
+        {
+            phaseElapsed += Time.deltaTime;
+            if (currentState == EnemyState.Windup)
+            {
+                if (phaseElapsed < heavyAttack.trackingTime && target != null) FaceTarget();
+                if (phaseElapsed >= heavyAttack.windup)
+                {
+                    ChangeState(EnemyState.Strike);
+                    CommitHeavyStrike();
+                    HeavyImpact?.Invoke();
+                }
+            }
+            else if (currentState == EnemyState.Strike && phaseElapsed >= heavyAttack.strikeDuration)
+                ChangeState(EnemyState.Recovery);
+            else if (currentState == EnemyState.Recovery && phaseElapsed >= RecoveryDuration && !isKnockedBack)
+                ChangeState(EnemyState.Chase);
+        }
+
+        public bool IsInsideHeavySector(Vector3 point)
+        {
+            if (!IsHeavy) return false;
+            Vector3 offset = point - transform.position;
+            if (Mathf.Abs(offset.y) > 2.5f) return false;
+            offset.y = 0;
+            return offset.sqrMagnitude <= heavyAttack.range * heavyAttack.range &&
+                (offset.sqrMagnitude < .001f || Vector3.Angle(transform.forward, offset) <= heavyAttack.angle * .5f);
+        }
+
+        private void CommitHeavyStrike()
+        {
+            if (target == null || !IsInsideHeavySector(target.position)) return;
+            Vector3 origin = transform.position + Vector3.up * .5f;
+            Vector3 offset = target.position + Vector3.up * .5f - origin;
+            int count = Physics.RaycastNonAlloc(origin, offset.normalized, obstructionHits,
+                offset.magnitude, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                var hit = obstructionHits[i].collider;
+                if (hit.transform.root != transform.root && hit.transform.root != target.root &&
+                    hit.GetComponentInParent<Health>() == null) return;
+            }
+            targetDamageable?.TakeDamage(heavyAttack.damage);
         }
 
         private void FaceTarget()

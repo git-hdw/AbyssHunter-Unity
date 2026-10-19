@@ -33,7 +33,7 @@ namespace AbyssHunter.Combat
             }
 
             int previousHealth = CurrentHealth;
-            CurrentHealth = Mathf.Max(0, CurrentHealth - damage);
+            CurrentHealth = Mathf.Max(0, CurrentHealth - damage); //保证血条的下限是0
             int appliedDamage = previousHealth - CurrentHealth;
             HealthChanged?.Invoke(CurrentHealth, maximumHealth);
             Damaged?.Invoke();

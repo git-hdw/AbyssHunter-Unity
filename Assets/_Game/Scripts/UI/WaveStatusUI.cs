@@ -66,7 +66,7 @@ namespace AbyssHunter.UI
         {
             if (waveSpawner == null)
             {
-                statusText.text = "Wave Spawner 未配置";
+                statusText.text = "波次生成器未配置";
                 return;
             }
 
