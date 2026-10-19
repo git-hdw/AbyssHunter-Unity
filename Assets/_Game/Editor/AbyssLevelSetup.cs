@@ -16,7 +16,7 @@ namespace AbyssHunter.EditorTools
 {
     public static class AbyssLevelSetup
     {
-        [MenuItem("Tools/Abyss Hunter/Verify sunken expedition")]
+        [MenuItem("Tools/深渊猎手/Verify sunken expedition")]
         public static void Verify()
         {
             if(EditorApplication.isPlayingOrWillChangePlaymode)return;
@@ -30,7 +30,7 @@ namespace AbyssHunter.EditorTools
         private static readonly List<Light> lights=new();
         private static readonly List<Renderer> runes=new();
 
-        [MenuItem("Tools/Abyss Hunter/Configure sunken expedition")]
+        [MenuItem("Tools/深渊猎手/Configure sunken expedition")]
         public static void Configure()
         {
             if(EditorApplication.isPlayingOrWillChangePlaymode)return;

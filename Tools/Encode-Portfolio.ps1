@@ -19,6 +19,6 @@ $outputPath = [IO.Path]::GetFullPath($OutputFile)
     -c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p `
     -color_primaries bt709 -color_trc bt709 -colorspace bt709 -color_range tv `
     -c:a aac -b:a 160k -ar 48000 -af "loudnorm=I=-18:TP=-1.5:LRA=11,afade=t=out:st=${fadeStart}:d=0.7" `
-    -metadata 'title=Abyss Hunter - Unity Gameplay Demo' -movflags +faststart -shortest $outputPath
+    -metadata 'title=深渊猎手 - 实机演示' -movflags +faststart -shortest $outputPath
 if ($LASTEXITCODE -ne 0) { throw "FFmpeg failed with exit code $LASTEXITCODE" }
 Write-Output $outputPath

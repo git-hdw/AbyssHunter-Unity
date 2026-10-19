@@ -14,7 +14,7 @@ namespace AbyssHunter.EditorTools
 {
     public static class HeavyEnemySetup
     {
-        [MenuItem("Tools/Abyss Hunter/Verify heavy combat")]
+        [MenuItem("Tools/深渊猎手/Verify heavy combat")]
         public static void Verify()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
@@ -25,7 +25,7 @@ namespace AbyssHunter.EditorTools
             EditorApplication.isPlaying = true;
         }
 
-        [MenuItem("Tools/Abyss Hunter/Configure heavy enemy encounters")]
+        [MenuItem("Tools/深渊猎手/Configure heavy enemy encounters")]
         public static void Configure()
         {
             if (EditorApplication.isPlaying) return;
@@ -109,7 +109,7 @@ namespace AbyssHunter.EditorTools
             File.WriteAllText("Logs/heavy-setup.txt","DONE: Heavy prefab, profile, shader, animator, Addressables registration and mixed encounters saved.");
         }
 
-        [MenuItem("Tools/Abyss Hunter/Refresh heavy appearance")]
+        [MenuItem("Tools/深渊猎手/Refresh heavy appearance")]
         public static void RefreshAppearance()
         {
             if (EditorApplication.isPlaying) return;

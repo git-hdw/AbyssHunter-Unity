@@ -9,7 +9,7 @@ namespace AbyssHunter.EditorTools
 {
     public static class ChinesePresentationSetup
     {
-        [MenuItem("Tools/Abyss Hunter/Configure Chinese presentation")]
+        [MenuItem("Tools/深渊猎手/Configure Chinese presentation")]
         public static void Configure()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
@@ -62,7 +62,7 @@ namespace AbyssHunter.EditorTools
             EditorUtility.SetDirty(label);
         }
 
-        [MenuItem("Tools/Abyss Hunter/Verify Chinese presentation")]
+        [MenuItem("Tools/深渊猎手/Verify Chinese presentation")]
         public static void Verify()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;

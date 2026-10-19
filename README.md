@@ -1,13 +1,13 @@
-# 深渊猎手 · Abyss Hunter
+# 深渊猎手
 
-个人独立完成的 3D 俯视角动作原型。用 Unity 6 LTS 从空场景做到可运行的 Windows 包，覆盖战斗、AI、资源加载、对象池、背包与流程闭环，作为求职作品集项目。
+《深渊猎手》（Abyss Hunter）是个人独立完成的 3D 俯视角动作原型。用 Unity 6 LTS 从空场景做到可运行的 Windows 包，覆盖战斗、AI、资源加载、对象池、背包与流程闭环，作为求职作品集项目。
 
 **引擎：** Unity 6.3 LTS（URP）  
 **平台：** Windows x64  
 **输入：** Unity Input System  
 **运行包：** `Builds/Portfolio/AbyssHunter.exe`（包含重击敌人与新版界面）
 
-当前为“沉没遗迹追猎”展示版，保留角色替换前的原有模型。[版本改动记录](CHANGELOG.md)包含功能说明、验证结果与后续范围。运行包在本地构建，未包含在源码仓库中。
+当前为《深渊猎手》展示版，首关名为“沉没遗迹追猎”，保留角色替换前的原有模型。[版本改动记录](CHANGELOG.md)包含功能说明、验证结果与后续范围。运行包在本地构建，未包含在源码仓库中。
 
 ## 玩法
 
@@ -53,6 +53,6 @@ Assets/Scenes/
 
 外观资源来自 KayKit Free Sample Pack。音效目前为程序占位，后续可替换为 Kenney 等 CC0 素材。
 
-重击机制、参数和运行验证见 [战斗说明](Docs/heavy-combat.md)。Unity 菜单 `Tools > Abyss Hunter > Verify heavy combat` 可复现集成检查。
+重击机制、参数和运行验证见 [战斗说明](Docs/heavy-combat.md)。Unity 菜单 `Tools > 深渊猎手 > Verify heavy combat` 可复现集成检查。
 
 关卡流程、素材和验证方式见 [沉没遗迹追猎](Docs/sunken-expedition.md)。

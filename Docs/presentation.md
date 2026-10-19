@@ -1,6 +1,6 @@
-# 展示版
+# 《深渊猎手》展示说明
 
-菜单、HUD、开场与结算采用统一展示风格，当前内容为“沉没遗迹追猎”。
+《深渊猎手》的菜单、HUD、开场与结算采用统一展示风格，当前展示关卡为“沉没遗迹追猎”。
 
 ## 界面
 
@@ -21,10 +21,10 @@ Unity 打开 `MainMenu` 或 `SampleScene`，进入 Play 即可。UI 由 `GamePre
 
 ## 录制与导出
 
-1. Unity 菜单 `Tools > Abyss Hunter > Record input-driven demo`。
+1. Unity 菜单 `Tools > 深渊猎手 > Record input-driven demo`。
 2. 工具以 1600×900、30 fps 捕获 Game View 和游戏混音。等待退出 Play；原始帧、WAV 和报告在 `Recordings/Presentation/raw`。
 3. 在 PowerShell 运行 `./Tools/Encode-Portfolio.ps1`；需要本机 FFmpeg。生成 H.264/AAC、适合直接播放的 MP4。
-4. `Tools > Abyss Hunter > Build portfolio player` 导出 Windows 可玩版本到 `Builds/Portfolio`。
+4. `Tools > 深渊猎手 > Build portfolio player` 导出 Windows 可玩版本到 `Builds/Portfolio`。
 
 录制工具只在 Editor 编译，通过 Input System 虚拟键鼠操作实际游戏；不修改生命、伤害、AI 或波次结果。它是输入回放演示，不是人工操作录像，也不是性能基准。视频中的结算应与该次实际运行结果一致。测试用的受控胜负验证与对外演示分开。
 
@@ -32,4 +32,4 @@ Unity 打开 `MainMenu` 或 `SampleScene`，进入 Play 即可。UI 由 `GamePre
 
 美术模型仍为项目已有 KayKit 素材；新增界面图形为程序绘制。中文字体为随包内置的 Noto Sans CJK SC，不依赖玩家电脑安装字体。字体源文件与 SIL Open Font License 位于 `Assets/_Game/Resources/Fonts/`；Windows 包根目录保留原文《字体许可.txt》。来源：https://github.com/notofonts/noto-cjk/tree/main/Sans/OTF/SimplifiedChinese 。
 
-`Tools > Abyss Hunter > Configure Chinese presentation` 同步场景与预制体中的旧版提示和字体；`Verify Chinese presentation` 验证各页面中文字符、英文残留、文字裁切和交互，报告与截图在 `Logs/presentation-verification.txt`、`Logs/presentation-review/chinese-*.png`。
+`Tools > 深渊猎手 > Configure Chinese presentation` 同步场景与预制体中的旧版提示和字体；`Verify Chinese presentation` 验证各页面中文字符、英文残留、文字裁切和交互，报告与截图在 `Logs/presentation-verification.txt`、`Logs/presentation-review/chinese-*.png`。

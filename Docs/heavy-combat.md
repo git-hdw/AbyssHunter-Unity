@@ -1,4 +1,4 @@
-# 重击敌人与战斗窗口
+# 《深渊猎手》战斗说明：重击敌人与战斗窗口
 
 这版战斗围绕“诱导重击 → 观察锁向 → 闪避或绕侧 → 趁后摇反击”展开。普通敌人保持追击、近战和受击后退，重击敌人承担范围威胁。
 
@@ -37,8 +37,8 @@ WASD 移动、左键攻击、Space 闪避。闪避会取消尚未结算的攻击
 
 ## 验证和构建
 
-Unity 菜单 `Tools > Abyss Hunter > Verify heavy combat` 运行编辑器内集成检查，完成后自动退出 Play，结果写入 `Logs/heavy-combat-verification.txt`，截图在 `Logs/heavy-combat/`。检查会用临时键鼠设备触发真实攻击/闪避，也会用受控站位、生命和障碍物隔离边界条件；它不是对外演示录像。
+Unity 菜单 `Tools > 深渊猎手 > Verify heavy combat` 运行编辑器内集成检查，完成后自动退出 Play，结果写入 `Logs/heavy-combat-verification.txt`，截图在 `Logs/heavy-combat/`。检查会用临时键鼠设备触发真实攻击/闪避，也会用受控站位、生命和障碍物隔离边界条件；它不是对外演示录像。
 
 覆盖锁向和侧移、站桩单次伤害、无敌帧时机、动画事件防重复、后摇反击和延长上限、墙体遮挡、暂停、死亡中断、同实例回池复用、混合波次及结算。
 
-`Tools > Abyss Hunter > Build portfolio player` 先构建 Addressables，再导出 Windows 包至 `Builds/Portfolio/AbyssHunter.exe`。只打开编辑器的 Asset Database 模式不代表玩家包资源已经更新。
+`Tools > 深渊猎手 > Build portfolio player` 先构建 Addressables，再导出 Windows 包至 `Builds/Portfolio/AbyssHunter.exe`。只打开编辑器的 Asset Database 模式不代表玩家包资源已经更新。

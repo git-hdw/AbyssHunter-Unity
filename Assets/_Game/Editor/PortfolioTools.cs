@@ -10,9 +10,9 @@ namespace AbyssHunter.EditorTools
 {
     public static class PortfolioTools
     {
-        [MenuItem("Tools/Abyss Hunter/Preview presentation")]
+        [MenuItem("Tools/深渊猎手/Preview presentation")]
         public static void Preview() => Start("review");
-        [MenuItem("Tools/Abyss Hunter/Record input-driven demo")]
+        [MenuItem("Tools/深渊猎手/Record input-driven demo")]
         public static void Record() => Start("record");
         private static void Start(string mode)
         {
@@ -38,7 +38,7 @@ namespace AbyssHunter.EditorTools
             view.GetType().GetProperty("selectedSizeIndex",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic).SetValue(view,count-1);
             view.Focus();
         }
-        [MenuItem("Tools/Abyss Hunter/Build portfolio player")]
+        [MenuItem("Tools/深渊猎手/Build portfolio player")]
         public static void Build()
         {
             Directory.CreateDirectory("Builds/Portfolio");
