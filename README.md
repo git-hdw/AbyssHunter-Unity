@@ -5,6 +5,8 @@
 **引擎：** Unity 6.3 LTS（URP）  
 **平台：** Windows x64  
 **输入：** Unity Input System  
+**演示视频：** [《深渊猎手》v0.2.0 实机演示（MP4）](https://github.com/git-hdw/AbyssHunter-Unity/releases/download/v0.2.0/AbyssHunter-Demo-v0.2.0.mp4) · [视频与运行包发布页](https://github.com/git-hdw/AbyssHunter-Unity/releases/tag/v0.2.0)
+
 **运行包：** [下载 Windows x64 v0.2.0](https://github.com/git-hdw/AbyssHunter-Unity/releases/download/v0.2.0/AbyssHunter-Windows-v0.2.0.zip) · [版本介绍与校验文件](https://github.com/git-hdw/AbyssHunter-Unity/releases/tag/v0.2.0)。完整解压后运行 `AbyssHunter.exe`，无须安装 Unity。
 
 当前为《深渊猎手》展示版，首关名为“沉没遗迹追猎”，采用兜帽猎手与骷髅敌人，并加入随身护火灯、分层深渊环境及归途点火表现。[版本改动记录](CHANGELOG.md)包含功能说明，[环境与微光说明](Docs/abyss-atmosphere.md)记录实现和验证方式。运行包未包含在源码仓库中。
