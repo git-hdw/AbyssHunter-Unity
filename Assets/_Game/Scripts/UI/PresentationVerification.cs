@@ -61,6 +61,11 @@ public sealed class PresentationVerification : MonoBehaviour
         Directory.CreateDirectory("Logs/presentation-review");
         yield return new WaitForSecondsRealtime(.5f);
         Check(UI!=null && UI.State==GamePresentation.ScreenState.Menu,"Menu bootstraps with one presentation owner.");
+        var menuColor=Camera.main.backgroundColor;
+        Check(Camera.main.clearFlags==CameraClearFlags.SolidColor && Mathf.Max(menuColor.r,Mathf.Max(menuColor.g,menuColor.b))<.2f,"Menu fade uses a dark backdrop without exposing the default skybox.");
+        float fadeDeadline=Time.realtimeSinceStartup+2;
+        var menuFade=UI.GetComponentInChildren<CanvasGroup>();
+        while(menuFade!=null && menuFade.alpha<.99f && Time.realtimeSinceStartup<fadeDeadline) yield return null;
         InspectChinese("01-menu");
         yield return Click("Controls");
         Check(FindButton("Close")!=null,"Instructions modal opens via pointer click.");
@@ -136,7 +141,8 @@ public sealed class PresentationVerification : MonoBehaviour
         Check(labels.All(t=>t.font==GameFont.Chinese)&&missing.Length==0,screen+": bundled Chinese font covers all visible characters: "+new string(missing));
         var english=labels.Where(t=>System.Text.RegularExpressions.Regex.IsMatch(t.text.Replace("WASD","").Replace("Esc",""),"[a-zA-Z]{2,}")).Select(t=>t.text).ToArray();
         Check(english.Length==0,screen+": no untranslated English copy: "+string.Join(" / ",english));
-        var clipped=labels.Where(t=>!string.IsNullOrEmpty(t.text)&&t.preferredHeight>t.rectTransform.rect.height+1)
+        var clipped=labels.Where(t=>!string.IsNullOrWhiteSpace(t.text)
+                && (t.preferredHeight>t.rectTransform.rect.height+1 || t.cachedTextGenerator.characterCountVisible==0))
             .Select(t=>$"{t.name} ({t.preferredHeight:F1}/{t.rectTransform.rect.height:F1})").ToArray();
         Check(clipped.Length==0,screen+": translated text fits its layout: "+string.Join(" / ",clipped));
         ScreenCapture.CaptureScreenshot("Logs/presentation-review/chinese-"+screen+".png");

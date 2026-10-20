@@ -67,9 +67,15 @@ namespace AbyssHunter.World
             if (health == null || health.IsDead || Extracted || MatchResult.HasEnded || GamePresentation.BlocksGameplay) return false;
             if (!HasCore && HuntComplete && CanReach(core))
             {
-                HasCore = true; coreVisual.SetActive(false); altarLight.color = new Color(.2f, .9f, 1); altarLight.intensity = 6;
-                foreach (var lamp in returnLights) { lamp.color = new Color(.2f, .95f, 1); lamp.intensity = 3; }
-                foreach (var rune in returnRunes) rune.sharedMaterial = awakenedRune;
+                HasCore = true; coreVisual.SetActive(false);
+                var atmosphere = GetComponent<AbyssAtmosphere>();
+                if (atmosphere != null) atmosphere.RecoverCore();
+                else
+                {
+                    altarLight.color = new Color(.2f, .9f, 1); altarLight.intensity = 6;
+                    foreach (var lamp in returnLights) { lamp.color = new Color(.2f, .95f, 1); lamp.intensity = 3; }
+                    foreach (var rune in returnRunes) rune.sharedMaterial = awakenedRune;
+                }
                 Announce("已取得深渊核心", "归途的符文亮起了。返回入口，点亮信标。");
                 return true;
             }

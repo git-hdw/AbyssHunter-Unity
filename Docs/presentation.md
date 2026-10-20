@@ -30,6 +30,6 @@ Unity 打开 `MainMenu` 或 `SampleScene`，进入 Play 即可。UI 由 `GamePre
 
 `Preview presentation` 同样走实际游戏流程，截图与报告写入 `Logs/presentation-review`。录制和预览工具均不进入玩家构建。
 
-美术模型仍为项目已有 KayKit 素材；新增界面图形为程序绘制。中文字体为随包内置的 Noto Sans CJK SC，不依赖玩家电脑安装字体。字体源文件与 SIL Open Font License 位于 `Assets/_Game/Resources/Fonts/`；Windows 包根目录保留原文《字体许可.txt》。来源：https://github.com/notofonts/noto-cjk/tree/main/Sans/OTF/SimplifiedChinese 。
+当前角色采用 KayKit 免费的兜帽猎手和骷髅模型，来源与许可见 [角色模型说明](character-models.md)；界面图形为程序绘制。中文字体为随包内置的 Noto Sans CJK SC，不依赖玩家电脑安装字体。字体源文件与 SIL Open Font License 位于 `Assets/_Game/Resources/Fonts/`；Windows 包根目录保留原文《字体许可.txt》。来源：https://github.com/notofonts/noto-cjk/tree/main/Sans/OTF/SimplifiedChinese 。
 
 `Tools > 深渊猎手 > Configure Chinese presentation` 同步场景与预制体中的旧版提示和字体；`Verify Chinese presentation` 验证各页面中文字符、英文残留、文字裁切和交互，报告与截图在 `Logs/presentation-verification.txt`、`Logs/presentation-review/chinese-*.png`。

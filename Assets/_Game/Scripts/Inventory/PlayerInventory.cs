@@ -70,7 +70,7 @@ namespace AbyssHunter.Inventory
 
             for (int i = 0; i < slots.Length; i++)
             {
-                if (!slots[i].IsEmpty && slots[i].Item == item)
+                if (!slots[i].IsEmpty && slots[i].Item.HasSameIdentity(item))
                 {
                     total += slots[i].Quantity;
                 }
@@ -108,7 +108,7 @@ namespace AbyssHunter.Inventory
             if (item == null || quantity <= 0 || GetTotalQuantity(item) < quantity) return false;
             for (int i = 0; i < slots.Length && quantity > 0; i++)
             {
-                if (slots[i].IsEmpty || slots[i].Item != item) continue;
+                if (slots[i].IsEmpty || !slots[i].Item.HasSameIdentity(item)) continue;
                 int amount = Mathf.Min(quantity, slots[i].Quantity);
                 slots[i].Remove(amount);
                 quantity -= amount;

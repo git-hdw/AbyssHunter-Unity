@@ -6,6 +6,8 @@ namespace AbyssHunter.UI
     internal sealed class PresentationAudio : MonoBehaviour
     {
         private AudioClip ambience;
+        private AudioSource source;
+        private AbyssHunter.World.AbyssExpedition expedition;
         private void Awake()
         {
             const int rate=24000;
@@ -24,9 +26,15 @@ namespace AbyssHunter.UI
             }
             ambience=AudioClip.Create("Abyss - original ambient",samples.Length,1,rate,false);
             ambience.SetData(samples,0);
-            var source=gameObject.AddComponent<AudioSource>();
+            source=gameObject.AddComponent<AudioSource>();
+            expedition=FindFirstObjectByType<AbyssHunter.World.AbyssExpedition>();
             source.clip=ambience; source.loop=true; source.volume=.45f; source.spatialBlend=0;
             source.Play();
+        }
+        private void Update()
+        {
+            float target = expedition == null ? .45f : expedition.BeaconLit ? .07f : .2f;
+            source.volume = Mathf.MoveTowards(source.volume, target, Time.unscaledDeltaTime * .25f);
         }
         private void OnDestroy() {if(ambience!=null) Destroy(ambience);}
     }

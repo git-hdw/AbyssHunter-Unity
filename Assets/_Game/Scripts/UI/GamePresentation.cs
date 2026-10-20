@@ -38,7 +38,8 @@ namespace AbyssHunter.UI
         private int damageTaken;
         private int resultShards, resultHealth, resultDepth, resultDefeated;
         private float uiTime;
-        internal static float AnimationDelta => Time.captureFramerate > 0 ? 1f / Time.captureFramerate : Time.unscaledDeltaTime;
+        // Loading or resuming the editor must not skip presentation beats in one frame.
+        internal static float AnimationDelta => Time.captureFramerate > 0 ? 1f / Time.captureFramerate : Mathf.Min(Time.unscaledDeltaTime, .1f);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Register()
@@ -90,6 +91,12 @@ namespace AbyssHunter.UI
         private void BuildMenu()
         {
             State = ScreenState.Menu;
+            var menuCamera = Camera.main;
+            if (menuCamera != null)
+            {
+                menuCamera.clearFlags = CameraClearFlags.SolidColor;
+                menuCamera.backgroundColor = Ink;
+            }
             Box(root,"Backdrop",-1600,-900,4800,2700,Ink);
             for (int i=0;i<18;i++) Box(root,"Fine grid",750+i*52,0,1,900,new Color(.14f,.27f,.31f,.13f));
             Box(root,"Divider",746,96,1,704,new Color(.22f,.43f,.46f,.32f));
@@ -292,7 +299,7 @@ namespace AbyssHunter.UI
         {
             var panel=Box(modal,title,x,394,272,133,new Color(.08f,.15f,.19f));
             Label(panel.transform,"Caption",title,20,13,240,28,14,Muted);
-            Label(panel.transform,"Value",value,20,44,240,70,48,White);
+            Label(panel.transform,"Value",value,20,42,240,80,48,White);
         }
         private RectTransform Overlay(string title,string subtitle)
         {
@@ -300,7 +307,7 @@ namespace AbyssHunter.UI
             var veil=Box(r,"Veil",-1600,-900,4800,2700,new Color(.015f,.035f,.055f,.88f)); veil.raycastTarget=true;
             Box(r,"Card",322,150,956,620,Panel);
             Box(r,"Accent",322,150,956,3,Cyan);
-            Label(r,"Title",title,370,238,860,69,48,White);
+            Label(r,"Title",title,370,236,860,78,48,White);
             Label(r,"Subtitle",subtitle,370,315,860,40,20,Muted);
             return r;
         }

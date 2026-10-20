@@ -106,6 +106,7 @@ namespace AbyssHunter.World
                 while(spawner.ActiveEnemies<expected&&Time.realtimeSinceStartup<deadline)yield return null;
                 Check(spawner.CurrentWave==area&&spawner.ActiveEnemies==expected,"Correct authored encounter spawned: "+area);
                 yield return new WaitForSeconds(.4f);Snapshot("0"+area+"-encounter");
+                yield return new WaitForEndOfFrame();
                 foreach(var enemy in FindObjectsByType<PooledEnemy>(FindObjectsSortMode.None))enemy.GetComponent<Health>().TakeDamage(1000);
                 yield return new WaitForSeconds(1.4f);
                 Check(spawner.CompletedEncounters==area,"Encounter clears once: "+area);

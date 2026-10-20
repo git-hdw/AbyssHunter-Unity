@@ -11,13 +11,13 @@ namespace AbyssHunter.Inventory
 
         public bool IsEmpty => Item == null || Quantity <= 0;
         public bool CanStack(ItemData item) =>
-            !IsEmpty && Item == item && Quantity < Item.MaximumStack;
+            !IsEmpty && Item.HasSameIdentity(item) && Quantity < Item.MaximumStack;
 
         public int Add(ItemData item, int quantity)
         {
-            if (quantity <= 0)
+            if (item == null || quantity <= 0)
             {
-                return 0;
+                return Mathf.Max(0, quantity);
             }
 
             if (IsEmpty)
@@ -26,7 +26,7 @@ namespace AbyssHunter.Inventory
                 Quantity = 0;
             }
 
-            if (Item != item)
+            if (!Item.HasSameIdentity(item))
             {
                 return quantity;
             }
