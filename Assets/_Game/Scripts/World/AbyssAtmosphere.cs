@@ -8,6 +8,7 @@ namespace AbyssHunter.World
     public sealed class AbyssAtmosphere : MonoBehaviour
     {
         [SerializeField] private Light[] routeLights;
+        [SerializeField] private bool useConfiguredRouteOrder;
         [SerializeField] private Renderer[] routeRunes;
         [SerializeField] private Material awakenedRune;
         [SerializeField] private Light altarLight, beaconLight;
@@ -46,12 +47,12 @@ namespace AbyssHunter.World
                 yield return null;
             }
             travellingEmber.gameObject.SetActive(false);
-            foreach (var rune in routeRunes.OrderByDescending(r => r.transform.position.z))
+            foreach (var rune in useConfiguredRouteOrder ? routeRunes : routeRunes.OrderByDescending(r => r.transform.position.z).ToArray())
             {
                 rune.sharedMaterial = awakenedRune;
                 yield return new WaitForSeconds(.045f);
             }
-            foreach (var lamp in routeLights.OrderByDescending(l => l.transform.position.z))
+            foreach (var lamp in useConfiguredRouteOrder ? routeLights : routeLights.OrderByDescending(l => l.transform.position.z).ToArray())
             {
                 lamp.color = new Color(.3f, .63f, .7f);
                 lamp.intensity = 1.1f;

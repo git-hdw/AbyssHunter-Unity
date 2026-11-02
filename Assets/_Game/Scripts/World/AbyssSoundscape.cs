@@ -7,6 +7,8 @@ namespace AbyssHunter.World
 {
     public sealed class AbyssSoundscape : MonoBehaviour
     {
+        [SerializeField] private Vector3[] windPositions = { new(0,-2,12), new(0,-2,36) };
+        [SerializeField] private Vector3 chainsPosition = new(-7,2,25), altarPosition = new(0,2,52), stonesPosition = new(13,-4,24);
         private readonly List<AudioClip> clips = new();
         private readonly List<AudioSource> beds = new();
         private AudioSource stones, fire;
@@ -19,11 +21,11 @@ namespace AbyssHunter.World
             mission = GetComponent<AbyssExpedition>();
             lantern = FindFirstObjectByType<LastLight>();
             var wind = Make("深渊穿堂风", 0, 8);
-            foreach (float z in new[] {12f, 36f}) beds.Add(Source("桥下风声", new Vector3(0, -2, z), wind, .22f, 20, true));
-            beds.Add(Source("庭院锁链", new Vector3(-7, 2, 25), Make("远处锁链", 1, 8), .16f, 15, true));
-            beds.Add(Source("祭坛低鸣", new Vector3(0, 2, 52), Make("深处共鸣", 2, 8), .16f, 17, true));
+            foreach (var position in windPositions) beds.Add(Source("桥下风声", position, wind, .22f, 20, true));
+            beds.Add(Source("庭院锁链", chainsPosition, Make("远处锁链", 1, 8), .16f, 15, true));
+            beds.Add(Source("祭坛低鸣", altarPosition, Make("深处共鸣", 2, 8), .16f, 17, true));
             fall = Make("坠落碎石", 3, 2);
-            stones = Source("裂隙落石", new Vector3(13, -4, 24), fall, .18f, 28, false);
+            stones = Source("裂隙落石", stonesPosition, fall, .18f, 28, false);
             if (lantern != null)
             {
                 fire = Source("护火灯燃烧", lantern.transform.position, Make("火苗轻响", 4, 8), .09f, 18, true);

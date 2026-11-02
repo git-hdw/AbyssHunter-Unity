@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Scenes/AbyssDepths.unity
+    guid: d9f8d0e6cee8fe040bf975b04caeeddd
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: ed123dafe00bb01439708a08991ed210, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

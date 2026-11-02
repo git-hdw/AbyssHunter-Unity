@@ -2,6 +2,10 @@
 
 《深渊猎手》（Abyss Hunter）是个人独立完成的 3D 俯视角动作原型。用 Unity 6 LTS 从空场景做到可运行的 Windows 包，覆盖战斗、AI、资源加载、对象池、背包与流程闭环，作为求职作品集项目。
 
+**开发接手：** 依次阅读 [长期开发规则](AGENTS.md)、[项目长期知识](Docs/PROJECT_CONTEXT.md) 和 [最新任务交接](Docs/HANDOFF.md)，了解架构约束、验证证据及下一步任务。
+
+**当前源码：** v0.3.0 工作区新增邮箱登录、本机账号进度及第二关“裂隙回廊”，第二关已从零重制为三层浮岛与宽桥连接的浮空裂隙，尚未发布。已配置 PlayFab Title ID，真实账号与邮件仍待验收，详见 [账号与第二关说明](Docs/accounts-and-depths.md)。下方已发布下载与视频仍为 v0.2.0。
+
 **引擎：** Unity 6.3 LTS（URP）  
 **平台：** Windows x64  
 **输入：** Unity Input System  

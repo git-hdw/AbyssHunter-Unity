@@ -15,9 +15,9 @@ using static AbyssHunter.UI.PresentationTheme;
 namespace AbyssHunter.UI
 {
     // Scene-local presentation owner. Gameplay systems remain the source of all HUD/stat data.
-    public sealed class GamePresentation : MonoBehaviour
+    public sealed partial class GamePresentation : MonoBehaviour
     {
-        public enum ScreenState { Menu, Intro, Playing, Paused, Inventory, Finishing, Result, Transition }
+        public enum ScreenState { Menu, Intro, Playing, Paused, Inventory, Finishing, Result, Transition, Login, LevelSelect }
         public static GamePresentation Current { get; private set; }
         public static bool BlocksGameplay => Current != null && Current.State != ScreenState.Playing;
         public ScreenState State { get; private set; }
@@ -51,7 +51,9 @@ namespace AbyssHunter.UI
 
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name != SceneFlow.MainMenuScene && scene.name != SceneFlow.GameScene) return;
+            var level = LevelCatalog.ForScene(scene.name);
+            if (scene.name != SceneFlow.MainMenuScene && level == null) return;
+            if (level != null && !SceneFlow.CanEnter(level)) { SceneFlow.LoadMenu(); return; }
             if (FindFirstObjectByType<GamePresentation>() != null) return;
             new GameObject("Game Presentation").AddComponent<GamePresentation>().Initialize(scene.name);
         }
@@ -80,7 +82,12 @@ namespace AbyssHunter.UI
             root = Rect(go.transform, "Safe Area", 0, 0, 1600, 900);
             root.anchorMin = root.anchorMax = root.pivot = new Vector2(.5f, .5f);
             root.anchoredPosition = Vector2.zero;
-            if (scene == SceneFlow.MainMenuScene) BuildMenu(); else BuildGame();
+            if (scene == SceneFlow.MainMenuScene)
+            {
+                BuildMenu();
+                if (!PlayFabAuthentication.Instance.IsSignedIn && !SceneFlow.CanEnter(LevelCatalog.All[0])) ShowAccount("login");
+            }
+            else BuildGame();
         }
 
         private static void DisableLegacy<T>() where T : Behaviour
@@ -109,6 +116,8 @@ namespace AbyssHunter.UI
             Button(root,"BeginRun","开始狩猎",90,620,420,BeginRun,true);
             Button(root,"Controls","操作说明",90,690,260,ShowControls);
             Button(root,"Quit","退出游戏",364,690,146,SceneFlow.Quit);
+            if (PlayFabAuthentication.Instance.IsSignedIn)
+                Button(root,"SignOut","退出账号",1194,55,320,()=>{PlayFabAuthentication.Instance.SignOut();SceneFlow.LoadMenu();});
             Label(root,"Enter hint","回车键  /  开始游戏",90,764,420,28,15,Muted);
             Label(root,"Seal caption","最后一束光",850,754,620,40,22,Gold,TextAnchor.MiddleCenter);
             Label(root,"Seal subtitle","追猎  /  夺核  /  撤离",850,801,620,28,15,Muted,TextAnchor.MiddleCenter);
@@ -121,14 +130,15 @@ namespace AbyssHunter.UI
         public void BeginRun()
         {
             if (State != ScreenState.Menu) return;
-            State=ScreenState.Transition;
-            StartCoroutine(TransitionTo(SceneFlow.LoadGame));
+            if (!PlayFabAuthentication.Instance.IsSignedIn && SceneFlow.CanEnter(LevelCatalog.All[0]))
+            { State=ScreenState.Transition; StartCoroutine(TransitionTo(SceneFlow.LoadGame)); return; }
+            ShowLevels();
         }
 
         private void ShowControls()
         {
             ClearModal(); modal=Overlay("狩猎手册", "沿微光深入遗迹，猎杀守卫，夺回核心，再返回入口撤离。");
-            Label(modal,"Controls","W A S D     移动，沿断桥探索三处遗迹\n鼠标左键     近战攻击，自动朝向附近的存活敌人\n空格键        闪避，短暂无敌，可取消尚未命中的攻击\nI 键             打开背包，点击生命药水恢复生命\nE 键            取回核心 / 投入四枚碎片 / 撤离\nEsc 键         暂停或继续；本次远征不提供中途回档",370,369,900,235,23,White);
+            Label(modal,"Controls","W A S D     移动，沿断桥探索三处遗迹\n鼠标左键     近战攻击，自动朝向附近的存活敌人\n空格键        闪避，短暂无敌，可取消尚未命中的攻击\nI 键             打开背包，点击生命药水恢复生命\nE 键            取回核心 / 按关卡要求投入碎片 / 撤离\nEsc 键         暂停或继续；本次远征不提供中途回档",370,369,900,235,23,White);
             Label(modal,"Tip","橙色扇区提示重击，青色提示反击。碎片靠近自动拾取，用于点亮归途信标。",370,610,900,40,18,Muted);
             Button(modal,"Close","返回",370,653,350,ClearModal,true);
         }
@@ -180,9 +190,9 @@ namespace AbyssHunter.UI
             State=ScreenState.Intro; Time.timeScale=0;
             modal=Rect(root,"Opening",0,0,1600,900);
             Box(modal,"Tint",-1600,-900,4800,2700,new Color(.02f,.05f,.08f,.65f));
-            Label(modal,"Chapter","深渊远征  /  01",0,270,1600,38,19,Gold,TextAnchor.MiddleCenter);
-            Label(modal,"Title","沉没遗迹追猎",0,320,1600,84,58,White,TextAnchor.MiddleCenter);
-            Label(modal,"Goal","猎杀侵蚀守卫  /  夺回核心  /  点亮归途",0,420,1600,40,18,Cyan,TextAnchor.MiddleCenter);
+            Label(modal,"Chapter",$"深渊远征  /  {System.Array.IndexOf(LevelCatalog.All,LevelCatalog.Current)+1:00}",0,270,1600,38,19,Gold,TextAnchor.MiddleCenter);
+            Label(modal,"Title",LevelCatalog.Current.Title,0,320,1600,84,58,White,TextAnchor.MiddleCenter);
+            Label(modal,"Goal",LevelCatalog.Current.Opening,0,420,1600,40,18,Cyan,TextAnchor.MiddleCenter);
             var count=Label(modal,"Countdown","",0,492,1600,74,48,Gold,TextAnchor.MiddleCenter);
             Label(modal,"Instruction","WASD 移动    /    鼠标左键攻击    /    空格键闪避",0,619,1600,40,22,White,TextAnchor.MiddleCenter);
             for(int i=3;i>0;i--) { count.text=i.ToString("00"); yield return WaitUnscaled(1); }
@@ -192,6 +202,7 @@ namespace AbyssHunter.UI
         private void Update()
         {
             uiTime += AnimationDelta;
+            UpdateAccountView();
             var k=Keyboard.current;
             if(k!=null)
             {
@@ -213,7 +224,7 @@ namespace AbyssHunter.UI
                 else if(State==ScreenState.Result)
                 {
                     if(k.rKey.wasPressedThisFrame) Restart();
-                    else if(k.mKey.wasPressedThisFrame) ReturnToMenu();
+                    else if(k.mKey.wasPressedThisFrame) ReturnToSelection();
                 }
             }
             if(hud==null || health==null) return;
@@ -247,6 +258,7 @@ namespace AbyssHunter.UI
 
         private int CountItem(bool potion)
         {
+            if (!potion && expedition != null) return expedition.CarriedShards;
             int count=0;
             if(inventory!=null) foreach(var slot in inventory.Slots)
                 if(!slot.IsEmpty && (slot.Item is HealingItemData)==potion) count+=slot.Quantity;
@@ -275,6 +287,8 @@ namespace AbyssHunter.UI
             resultShards=CountItem(false)+(expedition!=null?expedition.DepositedShards:0); resultHealth=health.CurrentHealth;
             resultDepth=spawner.CurrentWave; resultDefeated=DefeatedCount;
             resultWon=won; State=ScreenState.Finishing;
+            if (won && expedition != null && expedition.Extracted && PlayFabAuthentication.Instance.Progress != null)
+                PlayFabAuthentication.Instance.Progress.RecordCompletion(LevelCatalog.Current.Id, RunSeconds);
             StartCoroutine(Finish());
         }
         private IEnumerator Finish()
@@ -290,8 +304,12 @@ namespace AbyssHunter.UI
             Stat(664,"击败敌人",resultDefeated.ToString("00"));
             Stat(958,"收集碎片",resultShards.ToString("00"));
             Label(modal,"Detail",$"遭遇 {resultDepth:00} / {spawner.TotalWaves:00}     /     承受伤害 {damageTaken}     /     剩余生命 {resultHealth}",370,550,860,40,17,Muted);
-            Button(modal,"Retry","R 键  /  再次狩猎",370,638,420,Restart,true);
-            Button(modal,"Menu","M 键  /  返回主菜单",810,638,420,ReturnToMenu);
+            Button(modal,"Retry","R 键 / 再次狩猎",370,638,270,Restart,true);
+            Button(modal,"Menu","M 键 / 返回选关",960,638,270,ReturnToSelection);
+            if (resultWon && LevelCatalog.Current.Id == LevelCatalog.All[0].Id && LevelCatalog.All[1].IsUnlocked)
+                Button(modal,"NextLevel","进入下一关",665,638,270,()=>EnterLevel(LevelCatalog.All[1]));
+            if (PlayFabAuthentication.Instance.Progress != null)
+                Label(modal,"SaveStatus",PlayFabAuthentication.Instance.Progress.Notice,370,590,860,38,17,Muted);
             Label(modal,"Footer","深渊猎手   /   最后一束光",370,727,860,30,15,Muted);
             StartCoroutine(FadeIn(modal));
         }
@@ -343,7 +361,7 @@ namespace AbyssHunter.UI
             if(State!=ScreenState.Paused && State!=ScreenState.Inventory) return;
             ClearModal(); State=ScreenState.Playing; Time.timeScale=1;
         }
-        public void Restart() { State=ScreenState.Transition; StartCoroutine(TransitionTo(SceneFlow.LoadGame)); }
+        public void Restart() { State=ScreenState.Transition; StartCoroutine(TransitionTo(SceneFlow.RestartLevel)); }
         public void ReturnToMenu() { State=ScreenState.Transition; StartCoroutine(TransitionTo(SceneFlow.LoadMenu)); }
         private void ClearModal() { if(modal!=null) { modal.gameObject.SetActive(false); Destroy(modal.gameObject); modal=null; } }
         private IEnumerator FadeIn(RectTransform target)
@@ -364,6 +382,7 @@ namespace AbyssHunter.UI
         }
         private void OnDestroy()
         {
+            if (accountService != null) accountService.Changed -= OnAccountChanged;
             if(health!=null) {health.Died-=OnDeath;health.DamageTaken-=OnDamage;}
             if(spawner!=null) {spawner.WaveStarted-=OnWave;spawner.EnemyDefeated-=OnDefeated;spawner.AllWavesCompleted-=OnVictory;}
             if(expedition!=null){expedition.Completed-=OnVictory;expedition.Announced-=ShowAnnouncement;}

@@ -70,7 +70,7 @@ namespace AbyssHunter.EditorTools
                 // Content was built above. Reuse it instead of running a second bundle build.
                 settings.BuildAddressablesWithPlayerBuild = UnityEditor.AddressableAssets.Settings.AddressableAssetSettings.PlayerBuildOption.DoNotBuildWithPlayer;
                 report = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
-                    scenes=new[]{"Assets/Scenes/MainMenu.unity","Assets/Scenes/SampleScene.unity"},
+                    scenes=AbyssHunter.UI.LevelCatalog.BuildScenes,
                     locationPathName=Path.Combine(output,"AbyssHunter.exe"),target=BuildTarget.StandaloneWindows64,options=options });
             }
             finally { settings.BuildAddressablesWithPlayerBuild = previousBuildOption; }

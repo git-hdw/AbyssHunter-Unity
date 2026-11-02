@@ -71,7 +71,7 @@ namespace AbyssHunter.EditorTools
             File.WriteAllText("Logs/run-presentation-verification.flag", "1");
             EditorSceneManager.OpenScene("Assets/Scenes/MainMenu.unity");
             EditorWindow.GetWindow(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView")).Focus();
-            EditorApplication.isPlaying = true;
+            SessionState.SetBool("AbyssHunter.LocalVerification",true);EditorApplication.isPlaying = true;
         }
     }
 }

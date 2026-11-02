@@ -10,6 +10,10 @@
 /[Rr]ecordings/
 /[Pp]rofilerCaptures/
 
+# Unity editor recovery copies stay local; canonical scenes are backed up in Git.
+/Assets/_Recovery/
+/Assets/_Recovery.meta
+
 *.csproj
 *.sln
 *.user

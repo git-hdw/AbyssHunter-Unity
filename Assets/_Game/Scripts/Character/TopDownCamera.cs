@@ -9,6 +9,8 @@ namespace AbyssHunter.Character
         [SerializeField] private Vector3 offset = new(0f, 10f, -8f);
         [SerializeField, Min(0.01f)] private float smoothTime = 0.15f;
         [SerializeField] private bool environmentalFraming;
+        [SerializeField] private float[] bridgeCenters = {12,36};
+        [SerializeField] private float sanctumStart = 42;
         private float openingTime;
         private Vector3 framedOffset;
 
@@ -59,8 +61,9 @@ namespace AbyssHunter.Character
                 else
                 {
                     float z = target.position.z;
-                    float bridge = Mathf.Max(1 - Mathf.Abs(z - 12) / 4, 1 - Mathf.Abs(z - 36) / 4);
-                    float sanctum = Mathf.SmoothStep(0, 1, (z - 42) / 8);
+                    float bridge = 0;
+                    foreach (float center in bridgeCenters) bridge = Mathf.Max(bridge, 1 - Mathf.Abs(z - center) / 4);
+                    float sanctum = Mathf.SmoothStep(0, 1, (z - sanctumStart) / 8);
                     wantedOffset += new Vector3(0, Mathf.Max(Mathf.Max(0, bridge) * 1.6f, sanctum * 1.8f), -sanctum * .8f);
                     if (ui != null && (ui.State == GamePresentation.ScreenState.Finishing || ui.State == GamePresentation.ScreenState.Result)) wantedOffset *= .85f;
                 }

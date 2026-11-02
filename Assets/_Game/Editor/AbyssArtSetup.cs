@@ -13,9 +13,9 @@ using Object = UnityEngine.Object;
 
 namespace AbyssHunter.EditorTools
 {
-    public static class AbyssArtSetup
+    public static partial class AbyssArtSetup
     {
-        private const string Folder = "Assets/_Game/Art/Abyss/";
+        private const string Folder = "Assets/_Game/Art/SunkenPolish/";
         private static Transform art;
         private static Mesh bevel, flameMesh;
         private static Material stone, dark, metal, cloth, flame, purple, mist, wet, soot;
@@ -29,7 +29,7 @@ namespace AbyssHunter.EditorTools
             EditorSceneManager.OpenScene("Assets/Scenes/SampleScene.unity");
             EditorWindow.GetWindow(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView")).Focus();
             SessionState.SetBool("AbyssHunter.ArtReview", true);
-            EditorApplication.isPlaying = true;
+            SessionState.SetBool("AbyssHunter.LocalVerification",true);EditorApplication.isPlaying = true;
         }
 
         [MenuItem("Tools/深渊猎手/环境/应用深渊与微光美术")]
@@ -51,6 +51,7 @@ namespace AbyssHunter.EditorTools
             Courtyard();
             Sanctum();
             Details();
+            PortfolioArtPass(ruins);
             Lighting();
             var hunter = Object.FindFirstObjectByType<PlayerMovement>();
             var lantern = BuildLantern(hunter);
@@ -81,9 +82,9 @@ namespace AbyssHunter.EditorTools
                 }
                 grain.SetPixels(pixels); grain.Apply(); AssetDatabase.CreateAsset(grain, Folder + "石材细纹.asset");
             }
-            stone = Mat("潮蚀玄武岩", new Color(.25f, .31f, .34f), .15f, 0, grain);
+            stone = Mat("潮蚀玄武岩", new Color(.35f, .40f, .44f), .15f, 0, grain);
             stoneVariants = new Material[5];
-            for (int i = 0; i < 5; i++) stoneVariants[i] = Mat("旧石板" + i, new Color(.23f + i * .018f, .29f + i * .016f, .31f + i * .014f), .12f + i * .035f, 0, grain);
+            for (int i = 0; i < 5; i++) stoneVariants[i] = Mat("旧石板" + i, new Color(.29f + i * .028f, .34f + i * .023f, .38f + i * .02f), .12f + i * .035f, 0, grain);
             dark = Mat("深处岩壁", new Color(.055f, .095f, .13f), .08f, 0, grain);
             metal = Mat("磨损青铜", new Color(.31f, .23f, .12f), .48f, .65f);
             cloth = Mat("褪色披布", new Color(.19f, .23f, .21f), .06f);
@@ -93,7 +94,7 @@ namespace AbyssHunter.EditorTools
             purple = Mat("侵蚀紫晶", new Color(.26f, .12f, .35f), .4f, .15f, null, new Color(.6f, .12f, .95f));
             mist = AssetDatabase.LoadAssetAtPath<Material>(Folder + "裂隙薄雾.mat");
             if (mist == null) { mist = new Material(Shader.Find("AbyssHunter/DepthMist")); AssetDatabase.CreateAsset(mist, Folder + "裂隙薄雾.mat"); }
-            mist.SetColor("_BaseColor", new Color(.12f, .2f, .27f, .36f)); EditorUtility.SetDirty(mist);
+            mist.SetColor("_BaseColor", new Color(.18f, .26f, .34f, .17f)); EditorUtility.SetDirty(mist);
         }
         private static Material Mat(string name, Color color, float smooth, float metallic = 0, Texture texture = null, Color emission = default)
         {
@@ -242,12 +243,12 @@ namespace AbyssHunter.EditorTools
         private static void Lighting()
         {
             var sun = Object.FindObjectsByType<Light>(FindObjectsSortMode.None).First(l => l.type == LightType.Directional);
-            sun.color = new Color(.56f, .7f, .9f); sun.intensity = .85f; sun.shadows = LightShadows.Soft;
+            sun.color = new Color(.76f, .85f, 1f); sun.intensity = 1.8f; sun.shadows = LightShadows.Soft;
             sun.transform.rotation = Quaternion.Euler(38, -38, 0);
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(.19f, .25f, .33f);
-            RenderSettings.ambientEquatorColor = new Color(.095f, .13f, .17f);
-            RenderSettings.ambientGroundColor = new Color(.035f, .055f, .075f);
+            RenderSettings.ambientSkyColor = new Color(.45f, .52f, .62f);
+            RenderSettings.ambientEquatorColor = new Color(.30f, .36f, .43f);
+            RenderSettings.ambientGroundColor = new Color(.10f, .13f, .19f);
             RenderSettings.fog = true; RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = new Color(.035f, .065f, .095f); RenderSettings.fogDensity = .009f;
             Camera.main.backgroundColor = new Color(.012f, .025f, .044f);
@@ -258,7 +259,19 @@ namespace AbyssHunter.EditorTools
                 light.type = LightType.Point; light.color = new Color(.25f, .43f, .62f); light.intensity = 1.3f; light.range = 12; light.shadows = LightShadows.None;
             }
             var coreLight = GameObject.Find("Core glow").GetComponent<Light>(); coreLight.color = new Color(.47f, .2f, .75f); coreLight.intensity = 2.5f; coreLight.range = 6;
-            var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>("Assets/Settings/SampleSceneProfile.asset");
+            string profilePath = Folder + "SunkenVolume.asset";
+            if (AssetDatabase.LoadAssetAtPath<VolumeProfile>(profilePath) == null) AssetDatabase.CopyAsset("Assets/Settings/SampleSceneProfile.asset", profilePath);
+            var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(profilePath);
+            foreach (var volume in Object.FindObjectsByType<Volume>(FindObjectsSortMode.None)) volume.sharedProfile = profile;
+            var grading = profile.TryGet<ColorAdjustments>(out var color) ? color : profile.Add<ColorAdjustments>();
+            if (!AssetDatabase.Contains(grading)) AssetDatabase.AddObjectToAsset(grading, profile);
+            grading.postExposure.Override(.65f); grading.contrast.Override(12); grading.saturation.Override(-8);
+            var tone = profile.TryGet<Tonemapping>(out var tonemap) ? tonemap : profile.Add<Tonemapping>(); tone.mode.Override(TonemappingMode.ACES);
+            if (!AssetDatabase.Contains(tone)) AssetDatabase.AddObjectToAsset(tone, profile);
+            if (profile.TryGet<MotionBlur>(out var blur)) { blur.active = false; EditorUtility.SetDirty(blur); }
+            var cameraData = Camera.main.GetUniversalAdditionalCameraData(); cameraData.renderPostProcessing = true;
+            cameraData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing; cameraData.antialiasingQuality = AntialiasingQuality.High;
+            EditorUtility.SetDirty(grading); EditorUtility.SetDirty(tone); EditorUtility.SetDirty(profile);
             if (profile.TryGet<Bloom>(out var bloom)) { bloom.intensity.Override(.32f); bloom.threshold.Override(1.1f); EditorUtility.SetDirty(bloom); }
             if (profile.TryGet<Vignette>(out var vignette)) { vignette.intensity.Override(.15f); EditorUtility.SetDirty(vignette); }
         }
@@ -312,7 +325,7 @@ namespace AbyssHunter.EditorTools
             }
             foreach (string field in new[] {"altarLight", "beaconLight", "awakenedRune"}) target.FindProperty(field).objectReferenceValue = data.FindProperty(field).objectReferenceValue;
             var core = ((GameObject)data.FindProperty("coreVisual").objectReferenceValue).transform;
-            core.GetComponent<MeshFilter>().sharedMesh = flameMesh; core.localScale = new Vector3(.65f, 1.2f, .65f);
+            core.GetComponent<MeshFilter>().sharedMesh = flameMesh; core.localScale = new Vector3(.95f, 1.75f, .95f);
             target.FindProperty("core").objectReferenceValue = core; target.FindProperty("lantern").objectReferenceValue = lantern;
             var ember = Shape(PrimitiveType.Sphere, "回收核心的火种", core.position, Vector3.one * .2f, flame);
             target.FindProperty("travellingEmber").objectReferenceValue = ember.transform; ember.SetActive(false);
@@ -350,7 +363,7 @@ namespace AbyssHunter.EditorTools
                 var items = group.ToArray(); if (items.Length < 2) continue;
                 var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };
                 mesh.CombineMeshes(items.Select(f => new CombineInstance { mesh = f.sharedMesh, transform = art.worldToLocalMatrix * f.transform.localToWorldMatrix }).ToArray());
-                mesh.RecalculateBounds(); string path = Folder + "环境合批_" + group.Key + ".asset";
+                mesh.RecalculateBounds(); mesh.name = "环境合批_" + group.Key; string path = Folder + mesh.name + ".asset";
                 var saved = AssetDatabase.LoadAssetAtPath<Mesh>(path);
                 if (saved == null) { mesh.name = "环境合批_" + group.Key; AssetDatabase.CreateAsset(mesh, path); saved = mesh; }
                 else { EditorUtility.CopySerialized(mesh, saved); Object.DestroyImmediate(mesh); EditorUtility.SetDirty(saved); }

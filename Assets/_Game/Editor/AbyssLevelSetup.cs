@@ -23,7 +23,7 @@ namespace AbyssHunter.EditorTools
             EditorSceneManager.OpenScene("Assets/Scenes/SampleScene.unity");
             SessionState.SetBool("AbyssHunter.ExpeditionTest",true);
             EditorWindow.GetWindow(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView")).Focus();
-            EditorApplication.isPlaying=true;
+            SessionState.SetBool("AbyssHunter.LocalVerification",true);EditorApplication.isPlaying=true;
         }
         private static Transform root;
         private static Material stone, edge, dark, trim, dormant, glow, corruption;

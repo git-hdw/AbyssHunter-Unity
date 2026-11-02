@@ -21,6 +21,10 @@ namespace AbyssHunter.World
         [SerializeField] private Light altarLight, beaconLight;
         [SerializeField] private Material awakenedRune;
         [SerializeField, Min(1)] private int requiredShards = 4;
+        [SerializeField] private string levelTitle = "沉没遗迹";
+        [SerializeField] private string[] objectives = { "穿过遗迹入口", "猎杀侵蚀守卫", "肃清核心祭坛" };
+        [SerializeField] private string[] clearTitles = { "入口已肃清", "侵蚀守卫已猎杀", "核心封印已解除" };
+        [SerializeField] private string[] clearDetails = { "拾取碎片，穿过断桥，追猎庭院中的守卫。", "它的微光仍在祭坛深处回响。继续追猎。", "靠近祭坛，按 E 取回深渊核心。" };
         public bool HasCore { get; private set; }
         public bool BeaconLit { get; private set; }
         public bool Extracted { get; private set; }
@@ -30,7 +34,7 @@ namespace AbyssHunter.World
         public Transform Beacon => beacon;
         public int CarriedShards => inventory == null ? 0 : inventory.GetTotalQuantity(shard);
         public bool HuntComplete => encounters.CompletedEncounters == encounters.TotalWaves;
-        public string Objective => !HuntComplete ? (encounters.CompletedEncounters == 0 ? "穿过遗迹入口" : encounters.CompletedEncounters == 1 ? "猎杀侵蚀守卫" : "肃清核心祭坛") : !HasCore ? "取回深渊核心" : !BeaconLit ? "点亮归途信标" : "撤离沉没遗迹";
+        public string Objective => !HuntComplete ? objectives[Mathf.Min(encounters.CompletedEncounters, objectives.Length - 1)] : !HasCore ? "取回深渊核心" : !BeaconLit ? "点亮归途信标" : "撤离" + levelTitle;
         public string Detail => encounters.ActiveEnemies > 0 ? $"区域威胁  {encounters.EnemiesLeftInWave}  /  留意落锤前摇" : !HuntComplete ? "沿微光前进，寻找猎物" : !HasCore ? "靠近祭坛，按 E 取回核心" : !BeaconLit ? $"碎片 {CarriedShards} / {requiredShards}  ·  返回入口" : "信标已点亮，按 E 撤离";
         public Transform Destination => !HuntComplete ? encounters.NextApproach : !HasCore ? core : beacon;
         public string InteractionHint
@@ -57,9 +61,8 @@ namespace AbyssHunter.World
         }
         private void OnAreaCleared(int area)
         {
-            if (area == 2) Announce("侵蚀守卫已猎杀", "它的微光仍在祭坛深处回响。继续追猎。");
-            else if (area == 3) Announce("核心封印已解除", "靠近祭坛，按 E 取回深渊核心。");
-            else Announce("入口已肃清", "拾取碎片，穿过断桥，追猎庭院中的守卫。");
+            int index = Mathf.Clamp(area - 1, 0, clearTitles.Length - 1);
+            Announce(clearTitles[index], clearDetails[index]);
         }
         private bool CanReach(Transform point) => hunter != null && Vector3.Distance(hunter.transform.position, point.position) < 2.8f;
         public bool TryInteract()

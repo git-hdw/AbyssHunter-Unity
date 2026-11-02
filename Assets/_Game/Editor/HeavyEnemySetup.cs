@@ -22,7 +22,7 @@ namespace AbyssHunter.EditorTools
             EditorSceneManager.OpenScene("Assets/Scenes/SampleScene.unity");
             EditorWindow.GetWindow(typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView")).Focus();
             SessionState.SetBool("AbyssHunter.HeavyTest", true);
-            EditorApplication.isPlaying = true;
+            SessionState.SetBool("AbyssHunter.LocalVerification",true);EditorApplication.isPlaying = true;
         }
 
         [MenuItem("Tools/深渊猎手/Configure heavy enemy encounters")]
