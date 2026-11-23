@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using AbyssHunter.Character;
 using AbyssHunter.Combat;
 using AbyssHunter.Enemy;
@@ -36,7 +37,7 @@ namespace AbyssHunter.UI
         private int healingSlot = -1;
         private float healingSince;
         private float healCooldown;
-        private bool healingClicked;
+        private bool healingClicked, levelPressed;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Boot()
@@ -91,6 +92,14 @@ namespace AbyssHunter.UI
             InputSystem.QueueStateEvent(mouse,new MouseState{position=new Vector2(Screen.width*.5f,Screen.height*.45f)});
             if(phase==0 && clock>3) {Snapshot("01-menu");phase=1;phaseStart=clock;}
             else if(phase==1 && clock-phaseStart>1) {SendKeys(Key.Enter);phase=2;}
+            else if(phase==2 && ui.State==GamePresentation.ScreenState.LevelSelect)
+            {
+                var first=ui.GetComponentsInChildren<UnityEngine.UI.Button>().First(b=>b.name=="Level sunken-ruins");
+                Vector2 center=RectTransformUtility.WorldToScreenPoint(null,first.transform.TransformPoint(((RectTransform)first.transform).rect.center));
+                InputSystem.QueueStateEvent(mouse,new MouseState {position=center,buttons=(ushort)(levelPressed ? 0 : 1)});
+                levelPressed=!levelPressed;
+            }
+            else if(phase==2 && ui.State==GamePresentation.ScreenState.WeaponSelect) SendKeys(Key.Digit1);
             else if(phase==2 && ui.State==GamePresentation.ScreenState.Intro) {Snapshot("02-opening");phase=3;}
             else if(phase==3 && ui.State==GamePresentation.ScreenState.Playing)
             {

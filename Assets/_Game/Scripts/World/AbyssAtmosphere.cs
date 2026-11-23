@@ -35,6 +35,37 @@ namespace AbyssHunter.World
         {
             if (!recovering) { recovering = true; StartCoroutine(AwakenRoute()); }
         }
+        // Follow the authored floor lights near the route. Away from them the HUD uses navigation.
+        public bool TryGetReturnMarker(Vector3 position, out Vector3 marker)
+        {
+            marker = default;
+            if (!useConfiguredRouteOrder || routeRunes == null || routeRunes.Length == 0) return false;
+            Vector3 from = mission.Core.position;
+            float nearest = 3f * 3f;
+            bool found = false;
+            for (int i = 0; i <= routeRunes.Length; i++)
+            {
+                Vector3 to = i == routeRunes.Length ? mission.Beacon.position : routeRunes[i].transform.position;
+                Vector3 segment = to - from;
+                float length = segment.magnitude;
+                if (length > .01f)
+                {
+                    Vector3 direction = segment / length;
+                    float along = Mathf.Clamp(Vector3.Dot(position - from, direction), 0, length);
+                    float distance = (from + direction * along - position).sqrMagnitude;
+                    if (distance <= nearest)
+                    {
+                        nearest = distance;
+                        found = true;
+                        marker = from + direction * Mathf.Min(along + 3, length);
+                        if (length - along < 1 && i < routeRunes.Length)
+                            marker = i + 1 == routeRunes.Length ? mission.Beacon.position : routeRunes[i + 1].transform.position;
+                    }
+                }
+                from = to;
+            }
+            return found;
+        }
         private IEnumerator AwakenRoute()
         {
             Vector3 origin = core.position;

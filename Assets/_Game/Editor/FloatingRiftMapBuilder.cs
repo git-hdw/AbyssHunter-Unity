@@ -103,6 +103,7 @@ namespace AbyssHunter.EditorTools
 
             var waves=Object.FindFirstObjectByType<EnemyWaveSpawner>();ConfigureEncounters(waves);
             var data=new SerializedObject(mission);
+            Set(data,"watchSupply",potion.GetComponent<PickupItem>());
             Set(data,"encounters",waves);Set(data,"hunter",player);Set(data,"core",core);Set(data,"beacon",beacon);Set(data,"coreVisual",coreVisual);
             Set(data,"altarLight",altarLight);Set(data,"beaconLight",beaconLight);Set(data,"awakenedRune",cyan);
             Array(data,"returnLights",lamps.Cast<Object>().ToArray());Array(data,"returnRunes",runes.Cast<Object>().ToArray());
@@ -158,6 +159,7 @@ namespace AbyssHunter.EditorTools
                 for(int j=0;j<4;j++){var p=Point("战区出生点"+i+"-"+j,centers[i]+new Vector3(j%2==0?-3:3,1,j/2==0?-2:3));positions.GetArrayElementAtIndex(j).objectReferenceValue=p;all.Add(p);}
             }
             Array(data,"spawnPoints",all.ToArray());data.ApplyModifiedPropertiesWithoutUndo();
+            RiftCasterSetup.Configure(waves);
         }
         private static void Island(string name,Vector3 c,float width,float length,float bevel)
         {

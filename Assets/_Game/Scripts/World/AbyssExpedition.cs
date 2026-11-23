@@ -14,6 +14,7 @@ namespace AbyssHunter.World
         [SerializeField] private EnemyWaveSpawner encounters;
         [SerializeField] private PlayerMovement hunter;
         [SerializeField] private ItemData shard;
+        [SerializeField] private PickupItem watchSupply;
         [SerializeField] private Transform core, beacon;
         [SerializeField] private GameObject coreVisual;
         [SerializeField] private Light[] returnLights;
@@ -32,10 +33,34 @@ namespace AbyssHunter.World
         public int RequiredShards => requiredShards;
         public Transform Core => core;
         public Transform Beacon => beacon;
+        public bool AtBeacon => CanReach(beacon);
         public int CarriedShards => inventory == null ? 0 : inventory.GetTotalQuantity(shard);
         public bool HuntComplete => encounters.CompletedEncounters == encounters.TotalWaves;
         public string Objective => !HuntComplete ? objectives[Mathf.Min(encounters.CompletedEncounters, objectives.Length - 1)] : !HasCore ? "取回深渊核心" : !BeaconLit ? "点亮归途信标" : "撤离" + levelTitle;
-        public string Detail => encounters.ActiveEnemies > 0 ? $"区域威胁  {encounters.EnemiesLeftInWave}  /  留意落锤前摇" : !HuntComplete ? "沿微光前进，寻找猎物" : !HasCore ? "靠近祭坛，按 E 取回核心" : !BeaconLit ? $"碎片 {CarriedShards} / {requiredShards}  ·  返回入口" : "信标已点亮，按 E 撤离";
+        public string Detail => encounters.EncounterUnderway ? CombatDetail() : !HuntComplete ? "沿微光前进，寻找猎物" : !HasCore ? "靠近祭坛，按 E 取回核心" : !BeaconLit ? $"碎片 {CarriedShards} / {requiredShards}  ·  返回入口" : "信标已点亮，按 E 撤离";
+        private int lastThreatCount = -1;
+        private string lastHint, combatDetail;
+
+        private string CombatDetail()
+        {
+            int live = encounters.CountLiveThreats(out bool heavy, out bool caster);
+            if (live == 0)
+                return encounters.EnemiesLeftInWave > encounters.ActiveEnemies ? "留意四周，守卫正在逼近" : "威胁已解除";
+            string hint = (heavy, caster) switch
+            {
+                (true, true) => "横移躲火，留意落锤",
+                (true, false) => "躲开落锤，趁隙反击",
+                (false, true) => "杖头聚火时横移",
+                _ => "留意挥砍，闪避后反击"
+            };
+            if (live != lastThreatCount || hint != lastHint)
+            {
+                lastThreatCount = live;
+                lastHint = hint;
+                combatDetail = $"场上敌人  {live}  /  {hint}";
+            }
+            return combatDetail;
+        }
         public Transform Destination => !HuntComplete ? encounters.NextApproach : !HasCore ? core : beacon;
         public string InteractionHint
         {
@@ -62,7 +87,10 @@ namespace AbyssHunter.World
         private void OnAreaCleared(int area)
         {
             int index = Mathf.Clamp(area - 1, 0, clearTitles.Length - 1);
-            Announce(clearTitles[index], clearDetails[index]);
+            string detail = clearDetails[index];
+            if (area == 2 && watchSupply != null && watchSupply.isActiveAndEnabled && health.CurrentHealth < health.MaximumHealth)
+                detail = "西侧小桥通往生命药水，补给后沿北桥回到主路。";
+            Announce(clearTitles[index], detail);
         }
         private bool CanReach(Transform point) => hunter != null && Vector3.Distance(hunter.transform.position, point.position) < 2.8f;
         public bool TryInteract()

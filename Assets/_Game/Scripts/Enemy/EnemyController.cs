@@ -31,6 +31,7 @@ namespace AbyssHunter.Enemy
         private bool isKnockedBack;
         private Coroutine knockbackCoroutine;
         private Health health;
+        private RiftCaster caster;
         private float phaseElapsed;
         private float recoveryBonus;
         private bool recoveryStaggerUsed;
@@ -42,15 +43,18 @@ namespace AbyssHunter.Enemy
         public event Action HeavyImpact;
         public HeavyAttackProfile HeavyAttack => heavyAttack;
         public bool IsHeavy => heavyAttack != null;
+        internal bool IsCaster => caster != null;
         public bool IsArmored => IsHeavy && (currentState == EnemyState.Windup || currentState == EnemyState.Strike);
         public bool IsHeavyAttacking => IsHeavy && (IsArmored || currentState == EnemyState.Recovery);
         public float PhaseElapsed => phaseElapsed;
         public float RecoveryDuration => IsHeavy ? heavyAttack.recovery + recoveryBonus : 0;
+        public bool IsRecoveryStaggered => currentState == EnemyState.Recovery && recoveryStaggerUsed;
 
         private void Awake()
         {
             agent = GetComponent<NavMeshAgent>();
             health = GetComponent<Health>();
+            caster = GetComponent<RiftCaster>();
         }
 
         private void OnEnable()
@@ -68,6 +72,7 @@ namespace AbyssHunter.Enemy
 
         private void OnDisable()
         {
+            if (caster != null) caster.ResetCast();
             if (knockbackCoroutine != null)
             {
                 StopCoroutine(knockbackCoroutine);
@@ -147,7 +152,7 @@ namespace AbyssHunter.Enemy
                 return;
             }
 
-            if (distanceToTarget <= (IsHeavy ? heavyAttack.triggerDistance : attackRange))
+            if (distanceToTarget <= (IsHeavy ? heavyAttack.triggerDistance : attackRange) && (caster == null || caster.CanSee(target)))
             {
                 if (IsHeavy)
                 {
@@ -168,12 +173,20 @@ namespace AbyssHunter.Enemy
 
         private void UpdateAttack(float distanceToTarget)
         {
-            if (distanceToTarget > attackRange)
+            bool committedCast = caster != null && caster.IsCharging;
+            if (!committedCast && (distanceToTarget > attackRange || (caster != null && !caster.CanSee(target))))
             {
+                if (caster != null) caster.Interrupt();
                 ChangeState(EnemyState.Chase);
                 return;
             }
 
+            if (caster != null)
+            {
+                if (!caster.IsCharging) FaceTarget();
+                if (caster.TryBegin(target)) Attacked?.Invoke();
+                return;
+            }
             FaceTarget();
 
             if (Time.time >= nextAttackTime)
@@ -186,8 +199,8 @@ namespace AbyssHunter.Enemy
 
         public void ApplyAttackDamage()
         {
-            // Heavy attacks are committed by their phase clock, never by legacy clip events.
-            if (IsHeavy || !isActiveAndEnabled || (health != null && health.IsDead)) return;
+            // Heavy impacts and crystal projectiles resolve independently of melee clip events.
+            if (IsHeavy || caster != null || !isActiveAndEnabled || (health != null && health.IsDead)) return;
             if (!attackDamagePending || target == null)
             {
                 return;
@@ -251,6 +264,7 @@ namespace AbyssHunter.Enemy
             float duration)
         {
             isKnockedBack = true;
+            if (caster != null) caster.Interrupt();
             attackDamagePending = false;
 
             if (agent.isOnNavMesh)

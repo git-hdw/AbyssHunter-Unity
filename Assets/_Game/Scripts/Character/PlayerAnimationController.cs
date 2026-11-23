@@ -65,7 +65,9 @@ namespace AbyssHunter.Character
 
         private void PlayAttack()
         {
-            animator?.SetTrigger(AttackHash);
+            if (meleeAttack.UsesCrossbow) animator.CrossFadeInFixedTime("Base Layer.CrossbowShot", .035f, 0, 0);
+            else if (meleeAttack.UsesAxe) animator.CrossFadeInFixedTime("Base Layer.AxeSweep", .04f, 0, 0);
+            else animator?.SetTrigger(AttackHash);
         }
 
         private void PlayDodge()

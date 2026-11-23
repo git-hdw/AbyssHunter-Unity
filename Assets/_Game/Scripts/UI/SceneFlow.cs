@@ -1,3 +1,4 @@
+using AbyssHunter.Combat;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,20 +9,26 @@ namespace AbyssHunter.UI
         public const string MainMenuScene = "MainMenu";
         public const string GameScene = "SampleScene";
 
+        internal static HunterWeapon RunWeapon { get; private set; }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetWeapon() => RunWeapon = HunterWeapon.Sword;
+
         public static void LoadGame()
         {
             LoadLevel(LevelCatalog.All[0].Id);
         }
 
-        public static void LoadLevel(string id)
+        public static void LoadLevel(string id, HunterWeapon weapon = HunterWeapon.Sword)
         {
             var level = LevelCatalog.Find(id);
             if (level == null) return;
             if (!CanEnter(level)) { LoadMenu(); return; }
             Time.timeScale = 1f;
+            RunWeapon = weapon;
             SceneManager.LoadScene(level.Scene);
         }
-        public static void RestartLevel() => LoadLevel(LevelCatalog.Current.Id);
+        public static void RestartLevel() => LoadLevel(LevelCatalog.Current.Id, RunWeapon);
         public static bool CanEnter(LevelDefinition level)
         {
 #if UNITY_EDITOR
@@ -37,6 +44,7 @@ namespace AbyssHunter.UI
         public static void LoadMenu()
         {
             Time.timeScale = 1f;
+            ResetWeapon();
             SceneManager.LoadScene(MainMenuScene);
         }
 

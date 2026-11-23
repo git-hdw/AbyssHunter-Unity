@@ -39,8 +39,10 @@ namespace AbyssHunter.Character
         public bool IsDodging => isDodging;
         public float DodgeReadiness => Mathf.Clamp01(1f - (nextDodgeTime - Time.time) / dodgeCooldown);
 
+        private PlayerMeleeAttack attack;
         private void Awake()
         {
+            attack = GetComponent<PlayerMeleeAttack>();
             characterController = GetComponent<CharacterController>();
             health = GetComponent<Health>();
             spawnPosition = transform.position;
@@ -83,7 +85,7 @@ namespace AbyssHunter.Character
             }
 
             Move(moveDirection, moveSpeed);
-            Rotate(moveDirection);
+            if (attack == null || !attack.HoldsAttackFacing) Rotate(moveDirection);
         }
 
         private static Vector2 ReadMovementInput()

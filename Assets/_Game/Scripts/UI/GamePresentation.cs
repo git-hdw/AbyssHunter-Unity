@@ -5,6 +5,7 @@ using AbyssHunter.Enemy;
 using AbyssHunter.Inventory;
 using AbyssHunter.World;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
@@ -17,7 +18,7 @@ namespace AbyssHunter.UI
     // Scene-local presentation owner. Gameplay systems remain the source of all HUD/stat data.
     public sealed partial class GamePresentation : MonoBehaviour
     {
-        public enum ScreenState { Menu, Intro, Playing, Paused, Inventory, Finishing, Result, Transition, Login, LevelSelect }
+        public enum ScreenState { Menu, Intro, Playing, Paused, Inventory, Finishing, Result, Transition, Login, LevelSelect, WeaponSelect }
         public static GamePresentation Current { get; private set; }
         public static bool BlocksGameplay => Current != null && Current.State != ScreenState.Playing;
         public ScreenState State { get; private set; }
@@ -28,11 +29,17 @@ namespace AbyssHunter.UI
         private Text hpLabel, waveLabel, enemyLabel, timerLabel, lootLabel, dodgeLabel, bannerTitle, bannerSubtitle;
         private Image hpFill, dodgeFill;
         private Health health;
+        private Text weaponLabel;
+        private PlayerMeleeAttack playerAttack;
         private PlayerMovement player;
         private PlayerInventory inventory;
         private EnemyWaveSpawner spawner;
         private AbyssExpedition expedition;
         private Text interactionLabel, destinationLabel;
+        private NavMeshPath returnPath;
+        private AbyssAtmosphere returnAtmosphere;
+        private Vector3[] returnCorners;
+        private float nextRouteUpdate;
         private float bannerUntil, shownHealth=1;
         private bool resultWon;
         private int damageTaken;
@@ -85,7 +92,12 @@ namespace AbyssHunter.UI
             if (scene == SceneFlow.MainMenuScene)
             {
                 BuildMenu();
-                if (!PlayFabAuthentication.Instance.IsSignedIn && !SceneFlow.CanEnter(LevelCatalog.All[0])) ShowAccount("login");
+                if (!SceneFlow.CanEnter(LevelCatalog.All[0]))
+                {
+                    var account = PlayFabAuthentication.Instance;
+                    ShowAccount(account.ShouldResume ? "resume" : "login");
+                    if (account.ShouldResume) account.ResumeLogin();
+                }
             }
             else BuildGame();
         }
@@ -130,21 +142,25 @@ namespace AbyssHunter.UI
         public void BeginRun()
         {
             if (State != ScreenState.Menu) return;
-            if (!PlayFabAuthentication.Instance.IsSignedIn && SceneFlow.CanEnter(LevelCatalog.All[0]))
-            { State=ScreenState.Transition; StartCoroutine(TransitionTo(SceneFlow.LoadGame)); return; }
             ShowLevels();
         }
 
         private void ShowControls()
         {
             ClearModal(); modal=Overlay("狩猎手册", "沿微光深入遗迹，猎杀守卫，夺回核心，再返回入口撤离。");
-            Label(modal,"Controls","W A S D     移动，沿断桥探索三处遗迹\n鼠标左键     近战攻击，自动朝向附近的存活敌人\n空格键        闪避，短暂无敌，可取消尚未命中的攻击\nI 键             打开背包，点击生命药水恢复生命\nE 键            取回核心 / 按关卡要求投入碎片 / 撤离\nEsc 键         暂停或继续；本次远征不提供中途回档",370,369,900,235,23,White);
+            Label(modal,"Controls","W A S D     移动，沿断桥探索三处遗迹\n鼠标左键     使用出发前选定的武器攻击，持弩时指向射击\n空格键        闪避，短暂无敌，可取消尚未命中的攻击\nI 键             打开背包，点击生命药水恢复生命\nE 键            取回核心 / 按关卡要求投入碎片 / 撤离\nEsc 键         暂停或继续；本次远征不提供中途回档",370,369,900,235,23,White);
             Label(modal,"Tip","橙色扇区提示重击，青色提示反击。碎片靠近自动拾取，用于点亮归途信标。",370,610,900,40,18,Muted);
             Button(modal,"Close","返回",370,653,350,ClearModal,true);
         }
 
         private void BuildGame()
         {
+            if (LevelCatalog.Current.Id == "abyss-depths")
+            {
+                returnPath = new NavMeshPath();
+                returnAtmosphere = FindFirstObjectByType<AbyssAtmosphere>();
+                returnCorners = new Vector3[64];
+            }
             MatchResult.Reset();
             player=FindFirstObjectByType<PlayerMovement>();
             spawner=FindFirstObjectByType<EnemyWaveSpawner>();
@@ -158,7 +174,8 @@ namespace AbyssHunter.UI
             hud=Rect(root,"Combat HUD",0,0,1600,900);
             var left=Box(hud,"Vitals plate",36,32,350,112,Panel).transform;
             Box(left,"Accent",0,0,4,112,Cyan);
-            Label(left,"Name","猎手  /  生命",22,12,220,30,15,Muted);
+            playerAttack = player.GetComponent<PlayerMeleeAttack>();
+            weaponLabel = Label(left,"Name","猎剑  /  生命",22,12,220,30,15,Muted);
             hpLabel=Label(left,"Health value","100 / 100",190,12,138,30,19,White,TextAnchor.MiddleRight);
             Box(left,"Health track",22,56,306,12,new Color(.13f,.23f,.27f));
             hpFill=Box(left,"Health fill",22,56,306,12,Cyan);
@@ -211,6 +228,13 @@ namespace AbyssHunter.UI
                     if(modal!=null) { if(k.escapeKey.wasPressedThisFrame) ClearModal(); }
                     else if(k.enterKey.wasPressedThisFrame || k.spaceKey.wasPressedThisFrame) BeginRun();
                 }
+                else if(State==ScreenState.WeaponSelect)
+                {
+                    if (k.escapeKey.wasPressedThisFrame) BackFromWeapons();
+                    else if (k.digit1Key.wasPressedThisFrame) DepartWith(HunterWeapon.Sword);
+                    else if (k.digit2Key.wasPressedThisFrame) DepartWith(HunterWeapon.Axe);
+                    else if (k.digit3Key.wasPressedThisFrame) DepartWith(HunterWeapon.Crossbow);
+                }
                 else if(State==ScreenState.Playing)
                 {
                     if(k.escapeKey.wasPressedThisFrame) ShowPause();
@@ -234,14 +258,16 @@ namespace AbyssHunter.UI
             hpFill.color=shownHealth<.3f?Red:Cyan;
             hpLabel.text=$"{health.CurrentHealth} / {health.MaximumHealth}";
             timerLabel.text="用时   "+FormatTime(RunSeconds);
-            waveLabel.text=$"波次  {spawner.CurrentWave:00} / {spawner.TotalWaves:00}";
-            enemyLabel.text=spawner.CurrentWave==0?"正在准备战斗":spawner.EnemiesLeftInWave>0?$"剩余敌人  {spawner.EnemiesLeftInWave:00}":"本波已清除  /  稍作休整";
             if(expedition!=null)
             {
                 waveLabel.text=expedition.Objective;enemyLabel.text=expedition.Detail;
                 interactionLabel.text=expedition.InteractionHint;
                 var target=expedition.Destination;
-                if(target!=null)
+                if (spawner.EncounterUnderway)
+                    destinationLabel.text = "";
+                else if (returnPath != null && expedition.HasCore)
+                    UpdateReturnGuide();
+                else if(target!=null)
                 {
                     Vector3 delta=target.position-player.transform.position;
                     Vector3 view=Camera.main.transform.InverseTransformDirection(delta);
@@ -249,11 +275,55 @@ namespace AbyssHunter.UI
                     destinationLabel.text=$"目标 · {direction}  {delta.magnitude:0} 米";
                 }
             }
+            else
+            {
+                waveLabel.text=$"波次  {spawner.CurrentWave:00} / {spawner.TotalWaves:00}";
+                enemyLabel.text=spawner.CurrentWave==0?"正在准备战斗":spawner.EnemiesLeftInWave>0?$"剩余敌人  {spawner.EnemiesLeftInWave:00}":"本波已清除  /  稍作休整";
+            }
             lootLabel.text=$"碎片  {CountItem(false):00}    /    药水  {CountItem(true):00}";
             float ready=player.DodgeReadiness;
             dodgeFill.rectTransform.sizeDelta=new Vector2(188*ready,4);
+            weaponLabel.text = playerAttack != null && playerAttack.UsesCrossbow ? "轻弩  /  生命" : playerAttack != null && playerAttack.UsesAxe ? "重斧  /  生命" : "猎剑  /  生命";
             dodgeLabel.text=ready>=1?"空格  /  闪避就绪":"空格  /  闪避冷却中";
             if(bannerGroup!=null) bannerGroup.alpha=Mathf.MoveTowards(bannerGroup.alpha,uiTime<bannerUntil?1:0,AnimationDelta*3);
+        }
+
+        private void UpdateReturnGuide()
+        {
+            if (Time.time < nextRouteUpdate) return;
+            nextRouteUpdate = Time.time + .25f;
+            if (expedition.AtBeacon)
+            {
+                destinationLabel.text = "已抵达归途信标";
+                return;
+            }
+            if (NavMesh.SamplePosition(player.transform.position, out var start, 2, NavMesh.AllAreas) &&
+                NavMesh.SamplePosition(expedition.Beacon.position, out var end, 2, NavMesh.AllAreas) &&
+                NavMesh.CalculatePath(start.position, end.position, NavMesh.AllAreas, returnPath) &&
+                returnPath.status == NavMeshPathStatus.PathComplete)
+            {
+                int count = returnPath.GetCornersNonAlloc(returnCorners);
+                if (count > 1 && count < returnCorners.Length)
+                {
+                    float length = 0;
+                    for (int i = 1; i < count; i++) length += Vector3.Distance(returnCorners[i - 1], returnCorners[i]);
+                    int next = 1;
+                    while (next < count - 1 && (returnCorners[next] - start.position).sqrMagnitude < .25f) next++;
+                    var along = returnCorners[next] - start.position;
+                    if (returnAtmosphere != null && returnAtmosphere.TryGetReturnMarker(start.position, out var marker) &&
+                        NavMesh.SamplePosition(marker, out var onRoute, 1, NavMesh.AllAreas) &&
+                        !NavMesh.Raycast(start.position, onRoute.position, out _, NavMesh.AllAreas))
+                        along = onRoute.position - start.position;
+                    along.y = 0;
+                    var heading = Camera.main.transform;
+                    float right = Vector3.Dot(along, Vector3.ProjectOnPlane(heading.right, Vector3.up).normalized);
+                    float forward = Vector3.Dot(along, Vector3.ProjectOnPlane(heading.forward, Vector3.up).normalized);
+                    string direction = Mathf.Abs(right) > Mathf.Abs(forward) ? (right > 0 ? "向右" : "向左") : (forward > 0 ? "向前" : "向后");
+                    destinationLabel.text = $"归途 · {direction}  {length:0} 米";
+                    return;
+                }
+            }
+            destinationLabel.text = "沿桥返回归途信标";
         }
 
         private int CountItem(bool potion)
@@ -267,7 +337,11 @@ namespace AbyssHunter.UI
         public static string FormatTime(float time) => $"{(int)time/60:00}:{(int)time%60:00}";
         private void OnWave(int wave,int total)
         {
-            if(expedition!=null){ShowAnnouncement(spawner.CurrentEncounterTitle,"观察攻击前摇，闪避落锤后反击。");return;}
+            if (expedition != null)
+            {
+                ShowAnnouncement(spawner.CurrentEncounterTitle, "清除这片区域的守卫。");
+                return;
+            }
             bannerTitle.text=wave==total?"最后一波":$"第 {wave:00} 波";
             bannerSubtitle.text=string.IsNullOrEmpty(spawner.CurrentEncounterTitle)
                 ? (wave==total?"守住阵地，完成最后的狩猎。":"深渊中的敌人已发现你。")

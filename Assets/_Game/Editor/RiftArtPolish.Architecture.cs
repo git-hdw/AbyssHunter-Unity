@@ -45,10 +45,12 @@ namespace AbyssHunter.EditorTools
                 f.transform.rotation=Quaternion.Euler(i%3*8,29+i*47,(i%3-1)*14);
             }
             // Shallow carved strata stay near the existing floor, with no new collision surface.
-            var start=new Vector3(0,.02f,0);
-            Moulding("起航下层石环",start,3.35f,4.1f,.07f,pale,32,0,360,true);
-            Moulding("起航内层铜环",start+Vector3.up*.06f,2.6f,3.3f,.06f,inlay,32,0,360,false);
-            Glyphs(start+Vector3.up*.145f,3.65f,16,circuit);
+            if (!KayKitEntranceSetup.Available) {
+                var start=new Vector3(0,.02f,0);
+                Moulding("起航下层石环",start,3.35f,4.1f,.07f,pale,32,0,360,true);
+                Moulding("起航内层铜环",start+Vector3.up*.06f,2.6f,3.3f,.06f,inlay,32,0,360,false);
+                Glyphs(start+Vector3.up*.145f,3.65f,16,circuit);
+            }
             FloorFan(new Vector3(-16,1.52f,30),pale,inlay);
             // Line the pre-existing side opening, without spanning it or changing either side bridge.
             var mouth=new GameObject("裂隙井口断层",typeof(MeshFilter),typeof(MeshRenderer));mouth.transform.SetParent(art,false);
@@ -70,6 +72,7 @@ namespace AbyssHunter.EditorTools
         }
         private static void Facility(Vector3 p,Material stone,Material trim,Material glow)
         {
+            if (p.z < 20 && KayKitEntranceSetup.Available) return;
             Moulding("灵晶八角基础",p, .35f,1.35f,.16f,stone,8,0,360,false);
             Moulding("灵晶抱箍",p+Vector3.up*.95f,.72f,.98f,.20f,trim,16,12,345,true);
             Glyphs(p+Vector3.up*.19f,1.08f,8,glow);

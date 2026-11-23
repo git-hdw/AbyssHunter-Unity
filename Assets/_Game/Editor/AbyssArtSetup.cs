@@ -44,6 +44,12 @@ namespace AbyssHunter.EditorTools
             var old = ruins.transform.Find("深渊环境美术");
             if (old != null) Object.DestroyImmediate(old.gameObject);
             art = new GameObject("深渊环境美术").transform; art.SetParent(ruins.transform);
+            var foyer = ruins.transform.Find("沉没前厅模块建筑");
+            if (foyer != null) Object.DestroyImmediate(foyer.gameObject);
+            var bridge = ruins.transform.Find(SunkenBridgeSetup.RootName);
+            if (bridge != null) Object.DestroyImmediate(bridge.gameObject);
+            var altar = ruins.transform.Find(SunkenAltarSetup.RootName);
+            if (altar != null) Object.DestroyImmediate(altar.gameObject);
             SurfacePass(ruins);
             Backdrop();
             FallingDebris();
@@ -57,6 +63,9 @@ namespace AbyssHunter.EditorTools
             var lantern = BuildLantern(hunter);
             WireAtmosphere(ruins, lantern);
             CombineScenery(ruins);
+            SunkenFoyerSetup.ApplyToScene(ruins.transform);
+            SunkenBridgeSetup.ApplyToScene(ruins.transform);
+            SunkenAltarSetup.ApplyToScene(ruins.transform);
             var camera = Object.FindFirstObjectByType<TopDownCamera>();
             var cameraData = new SerializedObject(camera); cameraData.FindProperty("environmentalFraming").boolValue = true; cameraData.ApplyModifiedPropertiesWithoutUndo();
             if (ruins.GetComponent<AbyssSoundscape>() == null) ruins.AddComponent<AbyssSoundscape>();

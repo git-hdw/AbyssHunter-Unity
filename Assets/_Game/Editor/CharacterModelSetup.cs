@@ -55,6 +55,7 @@ namespace AbyssHunter.EditorTools
             var sword = Material("猎手长剑", Adventurers + "knight_texture.png");
             CreateVisual("HunterVisual", Adventurers + "Rogue_Hooded.fbx", "PlayerAnimator", hunter, 1,
                 Adventurers + "sword_1handed.fbx", sword, false);
+            HunterWeaponSetup.Apply();
             CreateVisual("SkeletonVisual", Skeletons + "Skeleton_Minion.fbx", "EnemyAnimator", bone, 1,
                 Skeletons + "Skeleton_Blade.fbx", bone, false);
             CreateVisual("GuardianVisual", Skeletons + "Skeleton_Warrior.fbx", "HeavyAnimator", bone, 1.25f,
@@ -98,7 +99,7 @@ namespace AbyssHunter.EditorTools
             return mat;
         }
 
-        private static void CreateVisual(string name, string modelPath, string controller, Material material,
+        internal static void CreateVisual(string name, string modelPath, string controller, Material material,
             float scale, string weaponPath, Material weaponMaterial, bool hammer)
         {
             var model = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(modelPath));

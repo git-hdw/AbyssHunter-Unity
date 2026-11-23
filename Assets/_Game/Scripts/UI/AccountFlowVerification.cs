@@ -105,7 +105,7 @@ namespace AbyssHunter.UI
             Check(UI.GetComponentsInChildren<InputField>().Length==1,"Recovery only asks for email");
             SetAccount("A");SceneFlow.LoadMenu();yield return null;yield return new WaitForSecondsRealtime(1);
             Click("BeginRun");Check(UI.State==GamePresentation.ScreenState.LevelSelect && !Button("Level abyss-depths").interactable,"New account has second level locked");Inspect("030-selection-locked");yield return new WaitForSecondsRealtime(.5f);
-            Click("Level sunken-ruins");yield return Until(()=>UI.State==GamePresentation.ScreenState.Playing);
+            Click("Level sunken-ruins");Click("Equip Sword");yield return Until(()=>UI.State==GamePresentation.ScreenState.Playing);
             var player=FindFirstObjectByType<PlayerMovement>();player.GetComponent<Health>().TakeDamage(1000);
             yield return Until(()=>UI.State==GamePresentation.ScreenState.Result);
             Check(!PlayFabAuthentication.Instance.Progress.Completed("sunken-ruins"),"Death does not unlock next level");
@@ -115,8 +115,22 @@ namespace AbyssHunter.UI
             while(UI.State!=GamePresentation.ScreenState.Result && Time.realtimeSinceStartup<deadline)
             {ExpeditionTestDriver.Advance(player);foreach(var enemy in FindObjectsByType<AbyssHunter.Enemy.PooledEnemy>(FindObjectsSortMode.None))enemy.GetComponent<Health>().TakeDamage(1000);yield return new WaitForSecondsRealtime(.1f);}
             Check(UI.State==GamePresentation.ScreenState.Result && PlayFabAuthentication.Instance.Progress.Completed("sunken-ruins"),"Successful extraction saves completion");
-            Check(Button("NextLevel")!=null,"Victory exposes next level");Click("NextLevel");yield return Until(()=>UI.State==GamePresentation.ScreenState.Playing);
-            Check(LevelCatalog.Current.Id=="abyss-depths","Next level loads depths");Inspect("030-depths-entry");yield return new WaitForSecondsRealtime(.5f);
+            Check(Button("NextLevel")!=null,"Victory exposes next level");
+            Click("NextLevel");
+            Click("WeaponBack");
+            Check(UI.State==GamePresentation.ScreenState.Result && Button("NextLevel")!=null,"Cancelling next departure restores the result.");
+            Click("NextLevel");
+            var selectionKeys=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Keyboard>();
+            try
+            {
+                selectionKeys.MakeCurrent();
+                UnityEngine.InputSystem.InputSystem.QueueStateEvent(selectionKeys,new UnityEngine.InputSystem.LowLevel.KeyboardState(UnityEngine.InputSystem.Key.Digit3));
+                yield return null;
+                yield return null;
+            }
+            finally { UnityEngine.InputSystem.InputSystem.RemoveDevice(selectionKeys); }
+            yield return Until(()=>UI.State==GamePresentation.ScreenState.Playing);
+            Check(LevelCatalog.Current.Id=="abyss-depths" && FindFirstObjectByType<PlayerMeleeAttack>().UsesCrossbow,"Next level loads depths with the crossbow chosen via 3.");Inspect("030-depths-entry");yield return new WaitForSecondsRealtime(.5f);
             player=FindFirstObjectByType<PlayerMovement>();player.GetComponent<Health>().SetInvulnerable(true);
             Check(FindObjectsByType<Renderer>(FindObjectsSortMode.None).All(r=>r.sharedMaterials.All(m=>m!=null && m.shader.name!="Hidden/InternalErrorShader")),"Floating rift materials and shaders are valid");
             Check(player.GetComponentInChildren<LastLight>().Strength>.7f,"Floating rift hunter lantern is lit");
@@ -125,6 +139,10 @@ namespace AbyssHunter.UI
             Check(Vector3.Distance(origin,floating.position)>.001f,"New altar crystals float independently");
             UI.ShowPause();var paused=floating.position;yield return new WaitForSecondsRealtime(.2f);
             Check(Vector3.Distance(paused,floating.position)<.001f,"Pause freezes new altar crystal motion");UI.Resume();
+            yield return ReviewEntrance(player);
+            // Cross the narrow entrance bridge before turning west toward the supply island.
+            yield return WalkTo(player,new Vector3(0,.1f,14));
+            yield return WalkTo(player,new Vector3(-16,1.5f,14));
             yield return WalkTo(player,new Vector3(-38,1.5f,30));Inspect("030-depths-side");yield return new WaitForSecondsRealtime(.5f);
             var depthsWaves=FindFirstObjectByType<AbyssHunter.Enemy.EnemyWaveSpawner>();
             while(depthsWaves.CompletedEncounters<depthsWaves.TotalWaves)
@@ -140,6 +158,7 @@ namespace AbyssHunter.UI
                 }
                 if(encounter==2)
                 {
+                    yield return ReviewWatch(player);
                     foreach(var waypoint in new[]{new Vector3(-16,1.5f,39),new Vector3(-16,1.5f,44),new Vector3(8,3,44),new Vector3(8,3,48)})
                         yield return WalkTo(player,waypoint);
                     yield return WalkTo(player,new Vector3(8,3,44));
@@ -147,6 +166,7 @@ namespace AbyssHunter.UI
                     Inspect("030-second-bridge");yield return new WaitForSecondsRealtime(.5f);
                 }
             }
+            yield return ReviewAltar(player);
             yield return WalkTo(player,FindFirstObjectByType<AbyssExpedition>().Core.position);Inspect("030-depths-altar");yield return new WaitForSecondsRealtime(.5f);
             var mission=FindFirstObjectByType<AbyssExpedition>();
             Check(mission.TryInteract() && mission.HasCore,"New floating altar core can be recovered");
@@ -162,6 +182,75 @@ namespace AbyssHunter.UI
             SetAccount("B");SceneFlow.LoadMenu();yield return null;Click("BeginRun");
             Check(!Button("Level abyss-depths").interactable,"Other account cannot use first account unlock");
             SetAccount("A");Check(PlayFabAuthentication.Instance.Progress.Completed("sunken-ruins"),"Original account restores its saved completion");
+        }
+        private IEnumerator ReviewAltar(PlayerMovement player)
+        {
+            var altar=GameObject.Find("KayKit核心圣龛");
+            if(altar==null)throw new Exception("Missing altar architecture");
+            Check(altar.GetComponentsInChildren<Collider>(true).Length==0,"Altar architecture adds no collision");
+            var points=new[]{new Vector3(8,3,52),new Vector3(-2,3,62),new Vector3(8,3,71),new Vector3(18,3,62)};
+            for(int i=0;i<points.Length;i++)
+            {
+                yield return WalkTo(player,points[i]);yield return new WaitForSecondsRealtime(1);
+                var delta=player.transform.position+Vector3.up*.35f-Camera.main.transform.position;
+                var ray=new Ray(Camera.main.transform.position,delta.normalized);
+                Check(altar.GetComponentsInChildren<MeshRenderer>().Where(r=>r.enabled && r.bounds.IntersectRay(ray,out float d) && d<delta.magnitude)
+                    .All(r=>r.GetComponent<AbyssOccluder>()?.IsFaded==true),"Altar architecture keeps hunter visible at "+points[i]);
+                Inspect("030-depths-altar-"+i);yield return new WaitForSecondsRealtime(.5f);
+            }
+        }
+
+        private IEnumerator ReviewWatch(PlayerMovement player)
+        {
+            var watch=GameObject.Find("KayKit守望遗迹");
+            if(watch!=null)Check(watch.GetComponentsInChildren<Collider>(true).Length==0,"Watch art adds no blocking colliders");
+            var points=new[]{new Vector3(-16,1.5f,30),new Vector3(-26,1.5f,30),new Vector3(-9,1.5f,30)};
+            string[] names={"030-depths-watch-arena","030-depths-watch-well","030-depths-watch-arcade"};
+            for(int i=0;i<points.Length;i++)
+            {
+                yield return WalkTo(player,points[i]);yield return new WaitForSecondsRealtime(.8f);
+                if(watch!=null)
+                {
+                    var delta=player.transform.position+Vector3.up*.35f-Camera.main.transform.position;
+                    var ray=new Ray(Camera.main.transform.position,delta.normalized);
+                    bool clear=watch.GetComponentsInChildren<MeshRenderer>().Where(r=>r.enabled && r.bounds.IntersectRay(ray,out float distance) && distance<delta.magnitude).All(r=>r.GetComponent<AbyssOccluder>()?.IsFaded==true);
+                    Check(clear,"Watch architecture keeps hunter visible at "+points[i]);
+                }
+                Inspect(names[i]);yield return new WaitForSecondsRealtime(.5f);
+            }
+            yield return WalkTo(player,new Vector3(-16,1.5f,37));
+            var well=GameObject.Find("裂隙封印井");
+            if(well!=null)
+            {
+                var faders=well.GetComponentsInChildren<AbyssOccluder>();
+                yield return WalkTo(player,new Vector3(-26,1.5f,35));
+                yield return WalkTo(player,new Vector3(-30.5f,1.5f,35));
+                yield return new WaitForSecondsRealtime(1.2f);
+                Check(faders.Any(f=>f.IsFaded),"Seal-well masonry fades on the north supply bridge");
+                Inspect("030-depths-well-north");yield return new WaitForSecondsRealtime(.5f);
+                yield return WalkTo(player,new Vector3(-38,1.5f,35));
+                yield return WalkTo(player,new Vector3(-38,1.5f,25));
+                yield return WalkTo(player,new Vector3(-30.5f,1.5f,25));
+                yield return new WaitForSecondsRealtime(1.2f);
+                Check(faders.Length>0 && faders.All(f=>!f.IsFaded),"Seal-well masonry restores on the south supply bridge");
+                Inspect("030-depths-well-south");yield return new WaitForSecondsRealtime(.5f);
+                yield return WalkTo(player,new Vector3(-26,1.5f,25));
+                yield return WalkTo(player,new Vector3(-16,1.5f,37));
+            }
+        }
+        private IEnumerator ReviewEntrance(PlayerMovement player)
+        {
+            var entrance=GameObject.Find("KayKit入口示范");
+            if(entrance==null)throw new Exception("Missing modular entrance");
+            var faders=entrance.GetComponentsInChildren<AbyssOccluder>();
+            yield return WalkTo(player,new Vector3(0,.1f,9));
+            yield return new WaitForSecondsRealtime(1);
+            Check(faders.Any(f=>f.IsFaded),"Entrance architecture fades when crossing behind gate");
+            Inspect("030-depths-entry-gate");yield return new WaitForSecondsRealtime(.5f);
+            yield return WalkTo(player,new Vector3(0,.1f,-4));
+            yield return new WaitForSecondsRealtime(1);
+            Check(faders.Length>0 && faders.All(f=>!f.IsFaded),"Entrance architecture restores after returning in front");
+            Inspect("030-depths-entry-return");yield return new WaitForSecondsRealtime(.5f);
         }
         private IEnumerator ProbeBridgeRailing(PlayerMovement player)
         {

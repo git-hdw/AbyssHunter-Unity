@@ -100,7 +100,8 @@ namespace AbyssHunter.World
             Place(new Vector3(-3.8f, 1, -1)); yield return new WaitForSecondsRealtime(1);
             Check(FindObjectsByType<AbyssOccluder>(FindObjectsSortMode.None).Any(o => o.IsFaded), "镜头前的建筑自动淡化");
             yield return Shot("03-occlusion");
-            Place(new Vector3(0, 1, -5)); yield return new WaitForSecondsRealtime(1.3f);
+            // Stand fully in front of the modular gate, rather than inside its renderer bounds.
+            Place(new Vector3(0, 1, -7.5f)); yield return new WaitForSecondsRealtime(1.3f);
             Check(FindObjectsByType<AbyssOccluder>(FindObjectsSortMode.None).All(o => !o.IsFaded), "移出遮挡后建筑恢复");
             var timings = new List<double>(); int maxBatches = 0, maxTriangles = 0;
             using (var recorder = ProfilerRecorder.StartNew(ProfilerCategory.Internal, "Main Thread", 1))

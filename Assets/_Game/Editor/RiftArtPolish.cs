@@ -84,9 +84,10 @@ namespace AbyssHunter.EditorTools
                 Rock("脱落碎片",p+away.normalized*1.1f-Vector3.up*(2+index%4),new Vector3(.5f,.8f,.6f),basalt,Quaternion.Euler(index*33,21,38));
             }
             // Three different arena signatures, keeping their fighting floors clear.
-            Ring(new Vector3(0,.06f,0),4.5f,.12f,bronze,32);
+            if (!KayKitEntranceSetup.Available) { Ring(new Vector3(0,.06f,0),4.5f,.12f,bronze,32);
             Ring(new Vector3(0,.075f,0),2.3f,.10f,bronze,24);
             for(int i=0;i<8;i++){float a=i*Mathf.PI/4;var mark=Box("起航罗盘星刻",new Vector3(Mathf.Cos(a)*3,.085f,Mathf.Sin(a)*3),new Vector3(.12f,.025f,1.2f),bronze);mark.transform.rotation=Quaternion.Euler(0,90-a*Mathf.Rad2Deg,0);}
+            }
             foreach(int side in new[]{-1,1})
             {
                 Cluster(new Vector3(side*7,1,3),blue,1.2f);
@@ -109,6 +110,11 @@ namespace AbyssHunter.EditorTools
             }
             Background(); Architecture(root); Lighting();
             Combine(walls);
+            KayKitEntranceSetup.ApplyToScene(root);
+            KayKitWatchSetup.ApplyToScene(root);
+            KayKitAltarSetup.ApplyToScene(root);
+            RiftFloorSetup.ApplyToScene(root);
+            RiftCrystalVisibility.ApplyToScene(root);
             AssetDatabase.SaveAssets();
         }
         private static void Cluster(Vector3 p,Material material,float scale)

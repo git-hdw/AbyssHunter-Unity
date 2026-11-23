@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace AbyssHunter.Enemy
@@ -9,6 +10,7 @@ namespace AbyssHunter.Enemy
         [Header("References")]
         [SerializeField] private EnemyPool enemyPool;
         [SerializeField] private EnemyPool heavyEnemyPool;
+        [SerializeField] private EnemyPool casterPool;
         [SerializeField] private Transform playerTarget;
         [SerializeField] private Transform[] spawnPoints;
 
@@ -25,6 +27,7 @@ namespace AbyssHunter.Enemy
             public string title;
             [Min(0)] public int normalCount;
             [Min(0)] public int heavyCount;
+            [Min(0)] public int casterCount;
             public Transform approach;
             public Transform[] positions;
             [Min(1)] public float activationRadius;
@@ -35,7 +38,11 @@ namespace AbyssHunter.Enemy
         public int TotalWaves => encounters != null && encounters.Length > 0 ? encounters.Length : numberOfWaves;
         public string CurrentEncounterTitle => encounters != null && CurrentWave > 0 && CurrentWave <= encounters.Length
             ? encounters[CurrentWave - 1].title : "";
-        public int ActiveEnemies { get; private set; }
+        public bool CurrentEncounterHasCaster => encounters != null && CurrentWave > 0 && CurrentWave <= encounters.Length
+            && encounters[CurrentWave - 1].casterCount > 0;
+        public bool EncounterUnderway => CurrentWave > CompletedEncounters;
+        private readonly List<PooledEnemy> activeEnemies = new();
+        public int ActiveEnemies => activeEnemies.Count;
         public int EnemiesLeftInWave { get; private set; }
         public int CompletedEncounters { get; private set; }
         public bool SpatialEncounters => encounters != null && encounters.Length > 0 && encounters[0].approach != null;
@@ -49,6 +56,22 @@ namespace AbyssHunter.Enemy
 
         private int nextSpawnIndex;
 
+        internal int CountLiveThreats(out bool heavy, out bool caster)
+        {
+            heavy = caster = false;
+            int count = 0;
+            foreach (var enemy in activeEnemies)
+            {
+                // A defeated enemy stays in its pool slot while its death animation plays.
+                var controller = enemy.Controller;
+                if (!controller.isActiveAndEnabled) continue;
+                count++;
+                heavy |= controller.IsHeavy;
+                caster |= controller.IsCaster;
+            }
+            return count;
+        }
+
         private IEnumerator Start()
         {
             if (enemyPool == null || playerTarget == null ||
@@ -60,8 +83,9 @@ namespace AbyssHunter.Enemy
 
             yield return enemyPool.WaitUntilReady();
             if (heavyEnemyPool != null) yield return heavyEnemyPool.WaitUntilReady();
+            if (casterPool != null) yield return casterPool.WaitUntilReady();
 
-            if (enemyPool.HasFailed || (heavyEnemyPool != null && heavyEnemyPool.HasFailed))
+            if (enemyPool.HasFailed || (heavyEnemyPool != null && heavyEnemyPool.HasFailed) || (casterPool != null && casterPool.HasFailed))
             {
                 Debug.LogError(
                     "Enemy Pool 初始化失败，波次生成已停止。",
@@ -90,7 +114,9 @@ namespace AbyssHunter.Enemy
                 int normalCount = configured ? encounters[wave-1].normalCount : enemiesInFirstWave + (wave-1)*additionalEnemiesPerWave;
                 int heavyCount = configured ? encounters[wave-1].heavyCount : 0;
                 if (heavyCount > 0 && heavyEnemyPool == null) {Debug.LogError("Encounter requires a heavy enemy pool.",this);yield break;}
-                int enemyCount = normalCount + heavyCount;
+                int casterCount = configured ? encounters[wave-1].casterCount : 0;
+                if (casterCount > 0 && casterPool == null) { Debug.LogError("Encounter requires a caster pool.", this); yield break; }
+                int enemyCount = normalCount + heavyCount + casterCount;
                 EnemiesLeftInWave = enemyCount;
 
                 Debug.Log($"第 {CurrentWave} 波开始，敌人数量：{enemyCount}", this);
@@ -98,7 +124,7 @@ namespace AbyssHunter.Enemy
 
                 for (int i = 0; i < enemyCount; i++)
                 {
-                    SpawnEnemy(i < heavyCount ? heavyEnemyPool : enemyPool, i);
+                    SpawnEnemy(i < heavyCount ? heavyEnemyPool : i < heavyCount + normalCount ? enemyPool : casterPool, i);
                     yield return new WaitForSeconds(timeBetweenSpawns);
                 }
 
@@ -136,14 +162,14 @@ namespace AbyssHunter.Enemy
             enemy.Defeated -= HandleEnemyDefeated;
             enemy.Defeated += HandleEnemyDefeated;
 
-            ActiveEnemies++;
+            activeEnemies.Add(enemy);
             RemainingEnemiesChanged?.Invoke(ActiveEnemies);
         }
 
         private void HandleEnemyDefeated(PooledEnemy enemy)
         {
             enemy.Defeated -= HandleEnemyDefeated;
-            ActiveEnemies = Mathf.Max(0, ActiveEnemies - 1);
+            activeEnemies.Remove(enemy);
             EnemiesLeftInWave = Mathf.Max(0, EnemiesLeftInWave - 1);
             EnemyDefeated?.Invoke();
             RemainingEnemiesChanged?.Invoke(ActiveEnemies);

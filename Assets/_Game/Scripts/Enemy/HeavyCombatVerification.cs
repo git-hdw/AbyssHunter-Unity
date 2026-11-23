@@ -105,14 +105,25 @@ namespace AbyssHunter.Enemy
             GamePresentation.Current.ShowPause();float elapsed=c.PhaseElapsed;
             yield return new WaitForSecondsRealtime(.3f);
             Check(Mathf.Approximately(c.PhaseElapsed,elapsed)&&playerHealth.CurrentHealth==100,"Pause freezes telegraph and attack phase.");
+            var sector = brute.transform.Find("Heavy attack sector").GetComponent<MeshRenderer>();
+            var block = new MaterialPropertyBlock();
+            sector.GetPropertyBlock(block);
+            float expectedRadius = c.HeavyAttack.range * elapsed / c.HeavyAttack.windup;
+            Check(sector.enabled && Mathf.Abs(block.GetFloat("_ChargeRadius") - expectedRadius) < .01f,
+                "Paused ground arc matches the frozen windup clock.");
             ScreenCapture.CaptureScreenshot("Logs/heavy-combat/01-paused-windup.png");
             GamePresentation.Current.Resume();
             yield return null;ScreenCapture.CaptureScreenshot("Logs/heavy-combat/02-locked.png");
             var phaseLabel=brute.GetComponentInChildren<TextMesh>();
             Check(phaseLabel.font==GameFont.Chinese && phaseLabel.text=="方向已锁定" &&
                 phaseLabel.text.All(ch=>phaseLabel.font.HasCharacter(ch)),"Heavy lock-on cue renders with the bundled Chinese font.");
+            while (c.CurrentState == EnemyState.Windup && c.PhaseElapsed < .63f) yield return null;
+            yield return new WaitForEndOfFrame();
+            Check(c.CurrentState == EnemyState.Windup && phaseLabel.text == "即将落锤" && playerHealth.CurrentHealth == 100,
+                "Crowded-fight cue appears before damage in the final locked windup.");
             yield return WaitState(EnemyState.Recovery);
             yield return null;
+            Check(!sector.enabled, "Recovery removes both the timing arc and danger outline.");
             Check(phaseLabel.text=="破绽 · 趁机反击" && phaseLabel.text.All(ch=>phaseLabel.font.HasCharacter(ch)),
                 "Heavy punish cue renders in Chinese without missing characters.");
             Check(playerHealth.CurrentHealth==75,"Standing in the committed sector takes exactly 25 damage.");
@@ -165,6 +176,8 @@ namespace AbyssHunter.Enemy
             yield return new WaitForSeconds(.45f);
             Check(hp.CurrentHealth==125 && Mathf.Approximately(c.RecoveryDuration,1.35f),
                 "A real mouse attack lands through its animation event and extends the recovery punish window.");
+            Check(c.IsRecoveryStaggered && player.GetComponent<PlayerMeleeAttack>().LastHitStaggeredHeavy &&
+                phaseLabel.text == "反击命中", "Accepted recovery knockback changes the hit feedback and prompt.");
 
             ResetDuel();yield return WaitState(EnemyState.Windup);
             int id=brute.GetInstanceID();hp.TakeDamage(999);
@@ -177,6 +190,7 @@ namespace AbyssHunter.Enemy
                 "Reusing the same instance resets health, attack phase and armor.");
             Check(!brute.transform.Find("Heavy attack sector").GetComponent<MeshRenderer>().enabled,
                 "Reused brute has no stale attack telegraph.");
+            Check(!c.IsRecoveryStaggered, "Reused brute clears its counter confirmation.");
 
             // Normal attack cancellation is verified with real mouse and Space input.
             PlacePlayer(new Vector3(-4,1,1.6f));brute.Controller.enabled=false;

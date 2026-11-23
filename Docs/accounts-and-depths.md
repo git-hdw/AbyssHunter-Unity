@@ -9,9 +9,11 @@ PlayFab 是托管游戏账号后台；Title ID 是游戏项目的公开编号，
 3. 将公开编号填入 `Assets/_Game/Resources/PlayFabConfig.json` 的 `titleId`，然后重新构建。不要把管理密钥放进客户端。
 4. 使用自己的测试邮箱完成注册、退出、重新登录和密码找回；检查收件箱及垃圾邮件。邮件发送配置若被服务端拒绝，需要在 Game Manager 完成对应配置，不能只凭 API 请求发送成功认定邮件可用。
 
-接口为 PlayFab Client 的 RegisterPlayFabUser、LoginWithEmailAddress、SendAccountRecoveryEmail。注册使用邮箱与密码，RequireBothUsernameAndEmail=false。账号密码规则以服务端为准；客户端不保存密码、邮件或认证票据，不上传关卡成绩。重置密码由邮件链接里的托管页面完成。
+注册、登录和找回密码使用 PlayFab Client 的 RegisterPlayFabUser、LoginWithEmailAddress、SendAccountRecoveryEmail。注册使用邮箱与密码，RequireBothUsernameAndEmail=false。账号密码规则以服务端为准；游戏不保存密码或邮箱，不上传关卡成绩。重置密码由邮件链接里的托管页面完成。
 
-每次启动重新联网登录；同一次进程登录后可以断网游玩。主菜单退出账号会清除当前身份。登录只验证身份，不是单机进度的防篡改系统。
+Windows 试玩包在注册或登录成功后，将本次 PlayFab 会话票据保存在当前 Windows 用户的凭据管理器中。本机启动标记按 Title ID 区分。下次打开时，游戏携票据联网查询当前登录者，收到有效的账号 ID 后才加载对应档案。票据失效会回到邮箱登录页，临时断网可点击“重新连接”。“退出游戏”保留登录，“退出账号”和恢复页的“使用其他账号”清除本机登录记忆，通关档案保留。旧版升级后的首次启动需要手动登录一次。Windows 编辑器正常 Play 时也支持保持登录；项目的自动账号回归与日常试玩凭据隔离。
+
+会话恢复使用 [PlayFab GetAccountInfo](https://learn.microsoft.com/en-us/rest/api/playfab/client/account-management/get-account-info?view=playfab-rest)，请求不指定查询目标，以服务端返回的当前玩家身份为准。
 
 官方参考：[注册](https://learn.microsoft.com/en-us/rest/api/playfab/client/authentication/register-playfab-user?view=playfab-rest)、[登录](https://learn.microsoft.com/en-us/rest/api/playfab/client/authentication/login-with-email-address?view=playfab-rest)、[密码找回](https://learn.microsoft.com/en-us/rest/api/playfab/client/account-management/send-account-recovery-email?view=playfab-rest)。
 
@@ -19,13 +21,13 @@ PlayFab 是托管游戏账号后台；Title ID 是游戏项目的公开编号，
 
 账号档案位于 Application.persistentDataPath/Accounts，以 Title ID 与 PlayFabId 的 SHA-256 组合作为文件名，避免把邮箱写进路径。保存版本、关卡 ID、通关标记和最佳成功用时。临时文件替换成功后才提交内存状态；写入失败不解锁下一关。损坏文件保留副本，有可用备份时读取备份，否则使用默认档案并显示提示。
 
-第一关成功撤离解锁第二关；仅清场或死亡不解锁。每次远征使用新的生命和空背包，仍不支持中途存档。重开加载当前关；结果页可以返回选关，第一关胜利后可以直接进入第二关。
+第一关成功撤离解锁第二关；仅清场或死亡不解锁。每次远征使用新的生命和空背包，仍不支持中途存档。选关后选择出战武器，本局锁定。重开当前关沿用该武器。结算页可以返回选关，第一关胜利后也可以直接为第二关选择武器并出发。
 
 第二关仍使用稳定关卡 ID `abyss-depths`，场景 `Assets/Scenes/AbyssDepths.unity` 与独立导航 `Assets/_Game/Combat/AbyssDepthsNavMesh.asset` 的 GUID 保留。2026-11-01 根据用户选择，从零制作“浮空裂隙”地图，替换原先由第一关派生的庭院地图；不复制第一关地形或预合并网格。
 
 地图由三个高度的浮岛组成：起航浮岛（0 米）、悬浮守望台（1.5 米）、上层中央祭坛（3 米）。主路采用八米宽升空桥和水平转台，桥头齐平，外围设实体护栏；西侧补给悬台有两条五米宽侧桥和一瓶固定生命药水，主路不依赖侧路。新多边形地形、倒悬晶岩、晶体、材质保存在 `Assets/_Game/Art/FloatingRift/`，装饰无碰撞。
 
-三段遭遇仍为 3 普通 → 1 普通+1 重锤 → 2 普通+2 重锤。共 9 枚保证掉落的碎片，取核后消耗 6 枚点灯，再次交互撤离，全部收集时余量为 3。任务文案、风声位置、14 处归航光标顺序和镜头区域按新地图重配。第一关、共享角色/敌人 Prefab、物品参数和全局导航代理设置保留。
+起航浮岛有 3 名普通骷髅。守望台由 1 名重锤守卫与 1 名烬火法师把守，中央祭坛有 2 名重锤守卫、1 名普通骷髅和 1 名火法师。9 名敌人各掉落 1 枚碎片。取核后用 6 枚碎片点亮信标，再次交互撤离，全部收集时剩余 3 枚。
 
 `Tools > 深渊猎手 > 关卡 > 制作全新浮空裂隙地图` 是明确的重建工具，会覆盖第二关的地图子物体并重烘焙独立导航，执行前将旧场景备份至 Logs。它不是启动步骤。旧桥梁修复与显示网格迁移工具检测到浮空地图标记后直接跳过，避免破坏新地图。`DepthsLevelSetup` 和 `Art/Abyss/Depths/` 保留作旧版迁移历史，当前场景不使用旧庭院地形。
 
@@ -61,3 +63,17 @@ Title ID 已配置；真实注册登录、重置邮件和改密后新旧密码�
 - 深渊残岛采用扁平不规则沉积岩模型，增加六处不同明度的断层遗迹和断拱。沿用原雾及两处各最多 18 粒的粒子；不增加动态灯，蓝/橙自发光略收敛。
 
 专用建筑与符文均为低面数网格，继续按材质/区域合批；模型文件和 `.meta` 保存在 RiftPolish，重建保留已有资产 GUID。具体 Game 视图、结构比对和 Player 回归见最新 HANDOFF，编辑器绘制批次不能换算为成品帧率。
+
+## 第二关入口模型融合（2026-11-02）
+
+KayKitEntranceSetup.Polish 为入口增加错缝石铺与细粒石缝底层、拱门/柱体断面变体及七处既有 AbyssOccluder。71 块石铺合成两个网格；高建筑保持独立以便遮挡淡化。原 FBX/导入设置与第一关、碰撞、导航不变，普通启动不需要重新运行生成器。
+
+开发包在已有 `--inventory-report` 与第二关参数之外，可加 `--entrance-capture=<绝对目录>`，以有图形、非 batch 模式记录入口/淡化/恢复并验证材质。该开关只用于显式开发回归；正式包不包含驱动，不影响正式联网认证。最新本轮有图形 Player 27/0，实际画面已查看；人工完整战斗和性能验收仍待完成，详见 HANDOFF。
+
+## 第二关中段模块化建筑（2026-11-02）
+
+独立 KayKitWatchSetup 和 KayKitWatch 资产为守望台增加两批错缝铺石、东缘悬空残拱廊及原裂隙井内石质支撑；入口、祭坛、第一关、原碰撞与导航保留。独立菜单只重建中段，完整 Rift 生成也调用同一源。未加灯/粒子，保留高建筑独立淡化。
+
+本轮 Editor 操作 57/0；16:38 双包重建后第二关有图形 Player 32/0、第一关无图形 23/0，退出码均 0。开发包可同时加 `--watch-capture=<绝对目录>`，在第二遭遇存活时记录中央/井口/东缘画面及检查无新增碰撞、Shader 和建筑视线；仍是受控回归，不代替完整人工战斗/性能或真实认证。具体图、报告、绘制开销与待验范围见 HANDOFF 最新记录；上方 27/0 为入口迭代历史结果。
+
+随后按用户反馈强化左侧方井为断裂封印井：高低残拱、下沉拱券/井壁及紫色铭文，保持原受护开口和南北补给桥。新源 KayKitWatchSetup.Well.cs；Editor 实际移动/淡化回归 68/0。17:11 最终双包重建后第二关有图形 37/0、第一关无图形 23/0，退出码均 0；沿用 --watch-capture 增加南北侧桥镜头和淡化/恢复、铭文发光验证。实际图与证据边界见 HANDOFF 最新记录，整体美术与人工战斗/性能验收仍未完成。

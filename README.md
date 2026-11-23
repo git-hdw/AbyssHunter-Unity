@@ -4,7 +4,9 @@
 
 **开发接手：** 依次阅读 [长期开发规则](AGENTS.md)、[项目长期知识](Docs/PROJECT_CONTEXT.md) 和 [最新任务交接](Docs/HANDOFF.md)，了解架构约束、验证证据及下一步任务。
 
-**当前源码：** v0.3.0 工作区新增邮箱登录、本机账号进度及第二关“裂隙回廊”，第二关已从零重制为三层浮岛与宽桥连接的浮空裂隙，尚未发布。已配置 PlayFab Title ID，真实账号与邮件仍待验收，详见 [账号与第二关说明](Docs/accounts-and-depths.md)。下方已发布下载与视频仍为 v0.2.0。
+**当前源码版本为 v0.3.0。** 两关远征支持出战前选择猎剑、重斧或轻弩。首关成功撤离后解锁「裂隙回廊」，挑战守望台与中央浮岛的近战守卫和烬火法师。本机按账号记录通关与最佳用时。[v0.3.0 发布说明](Docs/releases/v0.3.0.md) · [账号与第二关](Docs/accounts-and-depths.md)
+
+**运行源码**：用 Unity Hub 打开工程，选择 Unity 6000.3.23f1，安装 Windows Build Support，等待资源导入与编译。打开 `Assets/Scenes/MainMenu.unity` 进入 Play，联网登录后选择关卡与武器。主要依赖为 URP 17.0.1、Input System 1.16.0、AI Navigation 2.0.9、Addressables 2.9.1 和 UGUI 2.0.0。
 
 **引擎：** Unity 6.3 LTS（URP）  
 **平台：** Windows x64  
@@ -19,13 +21,13 @@
 
 ## 玩法
 
-- WASD 移动，鼠标左键近战，空格闪避
+- WASD 移动，鼠标左键使用出战武器，空格闪避
 - 菜单、操作说明、战斗提示及结算均为简体中文，内置中文字体
 - 沉没遗迹追猎：入口、守卫庭院、核心祭坛三处空间遭遇，通过断桥探索
 - 普通敌人与重击敌人：观察扇形前摇、躲开锁向落锤、利用后摇击退反击；祭坛为混合编队
-- 清除三处威胁后按 E 取回核心，沿亮起的符文返回入口，投入四枚碎片点亮信标，再按 E 撤离
+- 清除三处威胁后按 E 取回核心，沿亮起的符文返回入口，首关投入四枚碎片、第二关投入六枚碎片点亮信标，再按 E 撤离
 - 每名敌人必掉一枚深渊碎片，靠近自动拾取；生命药水随机掉落，“I”打开背包后左键点击使用
-- Esc 暂停，R 重开本局，M 返回主菜单
+- Esc 暂停，结算时 R 重开本关、M 返回选关
 - 本关为单次远征，不提供中途回档；原有玩家数据检查点不适用于关卡任务，已在远征中停用
 
 ## 工程结构
@@ -38,7 +40,8 @@ Assets/_Game/
   Materials/   角色、侵蚀裂隙与遗迹材质
 Assets/Scenes/
   MainMenu.unity      启动场景
-  SampleScene.unity   战斗关
+  SampleScene.unity   沉没遗迹追猎
+  AbyssDepths.unity   裂隙回廊
 ```
 
 敌人 Prefab 走 Addressables Default Local Group。改 Enemy 后需执行：
@@ -50,12 +53,13 @@ Assets/Scenes/
 | 按 键 | 功 能 |
 | --- | --- |
 | WASD | 移动 |
-| 鼠标左键 | 攻击 |
+| 1 / 2 / 3 | 出发前选择猎剑 / 重斧 / 轻弩 |
+| 鼠标左键 | 使用本局武器攻击 |
 | 空格 | 闪避 |
 | I | 背包 |
 | Esc | 暂停 / 主菜单退出 |
 | R | 结算后重开 |
-| M | 返回主菜单 |
+| M | 暂停时返回主菜单，结算时返回选关 |
 | Enter | 主菜单开始 |
 | E | 取回核心 / 点亮信标 / 撤离 |
 
@@ -64,3 +68,7 @@ Assets/Scenes/
 重击机制、参数和运行验证见 [战斗说明](Docs/heavy-combat.md)。Unity 菜单 `Tools > 深渊猎手 > Verify heavy combat` 可复现集成检查。
 
 关卡流程、素材和验证方式见 [沉没遗迹追猎](Docs/sunken-expedition.md)。
+
+## 后续规划
+
+v0.4.0 拟优先打磨战斗反馈并探索护火灯交互，再验证新关卡与 Boss 原型。阶段目标和验收边界见 [项目愿景](Docs/PROJECT_VISION.md)。

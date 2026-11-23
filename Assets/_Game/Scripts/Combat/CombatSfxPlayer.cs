@@ -27,6 +27,7 @@ namespace AbyssHunter.Combat
         private void OnEnable()
         {
             meleeAttack.Attacked += PlaySwing;
+            meleeAttack.BoltReleased += PlayBowstring;
             meleeAttack.HitConfirmed += PlayHit;
             health.Damaged += PlayHurt;
         }
@@ -34,14 +35,17 @@ namespace AbyssHunter.Combat
         private void OnDisable()
         {
             meleeAttack.Attacked -= PlaySwing;
+            meleeAttack.BoltReleased -= PlayBowstring;
             meleeAttack.HitConfirmed -= PlayHit;
             health.Damaged -= PlayHurt;
         }
 
         private void PlaySwing()
         {
-            CombatSfx.PlaySwing(audioSource);
+            if (!meleeAttack.UsesCrossbow) CombatSfx.PlaySwing(audioSource);
         }
+
+        private void PlayBowstring() => CombatSfx.PlayBowstring(audioSource);
 
         private void PlayHit(bool killedTarget)
         {
@@ -51,7 +55,8 @@ namespace AbyssHunter.Combat
                 return;
             }
 
-            CombatSfx.PlayHit(audioSource);
+            if (meleeAttack.LastHitStaggeredHeavy) CombatSfx.PlayCounter(audioSource);
+            else CombatSfx.PlayHit(audioSource);
         }
 
         private void PlayHurt()

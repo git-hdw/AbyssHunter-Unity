@@ -20,6 +20,7 @@ namespace AbyssHunter.Enemy
         private AudioClip chargeSound, impactSound;
         private bool audioPaused;
         private static readonly int ColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int ChargeRadiusId = Shader.PropertyToID("_ChargeRadius");
 
         private void Awake()
         {
@@ -75,18 +76,35 @@ namespace AbyssHunter.Enemy
             var state = controller.CurrentState;
             sector.enabled = state == EnemyState.Windup || state == EnemyState.Strike;
             Color color;
+            float chargeRadius = -1f;
+            bool impactImminent = false;
             if (state == EnemyState.Windup)
             {
                 bool locked = controller.PhaseElapsed >= controller.HeavyAttack.trackingTime;
+                float lockedDuration = controller.HeavyAttack.windup - controller.HeavyAttack.trackingTime;
+                float remaining = controller.HeavyAttack.windup - controller.PhaseElapsed;
+                impactImminent = locked && remaining <= Mathf.Min(.2f, lockedDuration * .5f);
                 color = locked ? new Color(1,.25f,.06f) : new Color(1,.7f,.15f);
-                phaseLabel.text = locked ? "方向已锁定" : "重锤兵 · 蓄力";
-                color.a = locked ? .8f + .2f * Mathf.Sin(controller.PhaseElapsed * 35) : .8f;
+                phaseLabel.text = impactImminent ? "即将落锤" : locked ? "方向已锁定" : "重锤兵 · 蓄力";
+                color.a = .9f;
+                chargeRadius = controller.HeavyAttack.range *
+                    Mathf.Clamp01(controller.PhaseElapsed / controller.HeavyAttack.windup);
             }
             else if (state == EnemyState.Strike) {color = Color.white;phaseLabel.text = "重击！";}
-            else if (state == EnemyState.Recovery) {color = new Color(.3f,1,.85f);phaseLabel.text = "破绽 · 趁机反击";}
+            else if (state == EnemyState.Recovery)
+            {
+                color = new Color(.3f, 1, .85f);
+                phaseLabel.text = controller.IsRecoveryStaggered ? "反击命中" : "破绽 · 趁机反击";
+            }
             else {color = new Color(1,.75f,.3f);phaseLabel.text = "重锤兵";}
-            phaseLabel.color = color;
-            properties.SetColor(ColorId,color);sector.SetPropertyBlock(properties);
+            phaseLabel.color = impactImminent ? new Color(1f, .84f, .48f) : color;
+            phaseLabel.characterSize = impactImminent ? .068f : .055f;
+            if (sector.enabled)
+            {
+                properties.SetColor(ColorId, color);
+                properties.SetFloat(ChargeRadiusId, chargeRadius);
+                sector.SetPropertyBlock(properties);
+            }
             if (Camera.main != null) phaseLabel.transform.rotation = Camera.main.transform.rotation;
             bool paused = Time.timeScale <= 0;
             if (paused != audioPaused)

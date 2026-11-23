@@ -4,9 +4,10 @@
 
 | 游戏角色 | 官方模型 | 版本 |
 | --- | --- | --- |
-| 兜帽猎手 | Rogue_Hooded、sword_1handed | Adventurers 2.0 FREE |
+| 兜帽猎手 | Rogue_Hooded、sword_1handed、axe_2handed、crossbow_1handed、arrow_crossbow | Adventurers 2.0 FREE |
 | 骷髅斥候 | Skeleton_Minion、Skeleton_Blade | Skeletons 1.1 FREE |
 | 骷髅重锤守卫 | Skeleton_Warrior，搭配项目已有重锤 | Skeletons 1.1 FREE |
+| 烬火法师 | Skeleton_Mage、Skeleton_Staff，使用项目已有的 KayKit 举杖和施法动画 | Skeletons 1.1 FREE |
 
 官方来源：[Adventurers](https://kaylousberg.itch.io/kaykit-adventurers)、[Skeletons](https://kaylousberg.itch.io/kaykit-skeletons)。仅使用免费包，不包含付费的 Skeleton Golem、Necromancer 或 EXTRA 贴图。原始许可分别保存在 `Assets/KayKit/Characters/Adventurers/License.txt` 与 `Assets/KayKit/Characters/Skeletons/License.txt`。
 

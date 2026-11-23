@@ -5,7 +5,16 @@ namespace AbyssHunter.Combat
     public static class CombatSfx
     {
         private static AudioClip swingClip;
+        private static AudioClip bowClip;
+        public static void PlayBowstring(AudioSource source) => Play(source, ref bowClip, CreateBowstring);
+
+        private static AudioClip CreateBowstring() => CreateClip("Sfx_Bowstring", .17f, (time, duration) =>
+        {
+            float twang = Mathf.Sin(2 * Mathf.PI * time * (560 - 1300 * time));
+            return .56f * twang * Mathf.Exp(-28 * time) + .25f * Mathf.Sin(8900 * time) * Mathf.Exp(-135 * time);
+        });
         private static AudioClip hitClip;
+        private static AudioClip counterClip;
         private static AudioClip killClip;
         private static AudioClip hurtClip;
 
@@ -22,6 +31,11 @@ namespace AbyssHunter.Combat
         public static void PlayKill(AudioSource source)
         {
             Play(source, ref killClip, CreateKill);
+        }
+
+        public static void PlayCounter(AudioSource source)
+        {
+            Play(source, ref counterClip, CreateCounter);
         }
 
         public static void PlayHurt(AudioSource source)
@@ -67,6 +81,17 @@ namespace AbyssHunter.Combat
                 float click = Mathf.Sin(2f * Mathf.PI * 720f * time) * Mathf.Exp(-time * 40f);
                 float noise = (Random.value * 2f - 1f) * 0.35f;
                 return (punch * 0.7f + click * 0.4f + noise) * envelope * 0.7f;
+            });
+        }
+
+        private static AudioClip CreateCounter()
+        {
+            return CreateClip("Sfx_Counter", .20f, (time, duration) =>
+            {
+                float body = .49f * Mathf.Sin(2f * Mathf.PI * 154f * time) * Mathf.Exp(-32f * time);
+                float ring = .26f * Mathf.Sin(2f * Mathf.PI * 913f * time)
+                    + .13f * Mathf.Sin(2f * Mathf.PI * 1477f * time);
+                return (body + ring * Mathf.Exp(-23f * time)) * (1f - time / duration);
             });
         }
 

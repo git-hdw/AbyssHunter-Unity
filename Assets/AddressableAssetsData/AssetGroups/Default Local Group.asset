@@ -15,6 +15,11 @@ MonoBehaviour:
   m_GroupName: Default Local Group
   m_GUID: 38e34a6e80700b645a1c771c03b83ddf
   m_SerializeEntries:
+  - m_GUID: 9812788000cbd1c4d98d39bfcde56494
+    m_Address: RiftCaster
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9d8010946ca5575448d9f2c3a4286b41
     m_Address: Assets/_Game/Prefabs/Enemy.prefab
     m_ReadOnly: 0

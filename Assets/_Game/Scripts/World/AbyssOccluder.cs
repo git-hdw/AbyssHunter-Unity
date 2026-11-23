@@ -7,6 +7,7 @@ namespace AbyssHunter.World
     [RequireComponent(typeof(Renderer))]
     public sealed class AbyssOccluder : MonoBehaviour
     {
+        [SerializeField] private float targetHeight = .35f;
         private Renderer surface;
         private Material original, faded;
         private Camera view;
@@ -35,7 +36,7 @@ namespace AbyssHunter.World
         private void LateUpdate()
         {
             if (view == null || hunter == null) return;
-            Vector3 delta = hunter.position + Vector3.up * .35f - view.transform.position;
+            Vector3 delta = hunter.position + Vector3.up * targetHeight - view.transform.position;
             var bounds = surface.bounds; bounds.Expand(.6f);
             bool blocks = bounds.IntersectRay(new Ray(view.transform.position, delta.normalized), out float distance) && distance < delta.magnitude;
             visibility = Mathf.MoveTowards(visibility, blocks ? .12f : 1, Time.unscaledDeltaTime * 4);

@@ -22,7 +22,9 @@ namespace AbyssHunter.UI
         [Serializable] private sealed class Configuration { public string titleId; }
         [Serializable] private sealed class Request { public string TitleId; public string Email; public string Password; public bool RequireBothUsernameAndEmail; }
         [Serializable] private sealed class Response { public int code; public string error; public Result data; }
-        [Serializable] private sealed class Result { public string PlayFabId; }
+        [Serializable] private sealed class Result { public string PlayFabId; public string SessionTicket; public AccountInfo AccountInfo; }
+        [Serializable] private sealed class AccountInfo { public string PlayFabId; }
+        private const string ResumeMethod = "GetAccountInfo";
         private static PlayFabAuthentication instance;
         public static PlayFabAuthentication Instance
         {
@@ -45,6 +47,23 @@ namespace AbyssHunter.UI
         private float recoveryUntil;
         private UnityWebRequest activeRequest;
         private int generation;
+        private bool attemptedResume;
+        public static bool SupportsRememberedLogin
+        {
+            get
+            {
+#if UNITY_EDITOR_WIN
+                return !UnityEditor.SessionState.GetBool("AbyssHunter.030Suite", false) &&
+                       !UnityEditor.SessionState.GetBool("AbyssHunter.LocalVerification", false);
+#else
+                return Application.platform == RuntimePlatform.WindowsPlayer;
+#endif
+            }
+        }
+        private string RememberKey => "AbyssHunter.RememberSession." + TitleId;
+        private bool HasTitle => !string.IsNullOrEmpty(TitleId) && System.Text.RegularExpressions.Regex.IsMatch(TitleId, "^[A-Za-z0-9]+$");
+        public bool CanResume => SupportsRememberedLogin && HasTitle && PlayerPrefs.GetInt(RememberKey) == 1;
+        public bool ShouldResume => !attemptedResume && CanResume;
         private void Awake()
         {
             var config = Resources.Load<TextAsset>("PlayFabConfig");
@@ -53,6 +72,20 @@ namespace AbyssHunter.UI
         }
         public void Register(string email, string password) => Begin("RegisterPlayFabUser", email, password);
         public void Login(string email, string password) => Begin("LoginWithEmailAddress", email, password);
+        public void ResumeLogin()
+        {
+            if (IsBusy || IsSignedIn || !CanResume) return;
+            attemptedResume = true;
+            if (!WindowsLoginTicket.TryRead(TitleId, out string ticket))
+            {
+                Message = "暂时无法读取已记住的登录，请重试或使用其他账号。"; Changed?.Invoke(); return;
+            }
+            if (string.IsNullOrEmpty(ticket))
+            {
+                ForgetLogin(); Message = "请重新登录猎手账号。"; Changed?.Invoke(); return;
+            }
+            StartCoroutine(Send(ResumeMethod, null, null, generation, ticket));
+        }
         public void Recover(string email)
         {
             if (RecoveryRemaining > 0) return;
@@ -61,20 +94,23 @@ namespace AbyssHunter.UI
         private void Begin(string method, string email, string password)
         {
             if (IsBusy || IsSignedIn) return;
-            if (string.IsNullOrEmpty(TitleId) || !System.Text.RegularExpressions.Regex.IsMatch(TitleId, "^[A-Za-z0-9]+$"))
+            if (!HasTitle)
             { Message = "账号服务尚未配置，请设置 PlayFab Title ID。"; Changed?.Invoke(); return; }
             if (string.IsNullOrWhiteSpace(email) || (password != null && password.Length == 0))
             { Message = "请填写邮箱和密码。"; Changed?.Invoke(); return; }
             StartCoroutine(Send(method, email.Trim(), password, generation));
         }
-        private IEnumerator Send(string method, string email, string password, int requestGeneration)
+        private IEnumerator Send(string method, string email, string password, int requestGeneration, string ticket = null)
         {
-            IsBusy = true; Message = "正在连接账号服务……"; Changed?.Invoke();
-            if (password == null) recoveryUntil = Time.realtimeSinceStartup + 60;
-            var body = new Request { TitleId = TitleId, Email = email, Password = password, RequireBothUsernameAndEmail = false };
+            bool resume = method == ResumeMethod;
+            bool recovery = method == "SendAccountRecoveryEmail";
+            IsBusy = true; Message = resume ? "正在恢复上次登录……" : "正在连接账号服务……"; Changed?.Invoke();
+            if (recovery) recoveryUntil = Time.realtimeSinceStartup + 60;
+            string body = resume ? "{}" : JsonUtility.ToJson(new Request { TitleId = TitleId, Email = email, Password = password, RequireBothUsernameAndEmail = false });
             using var request = new UnityWebRequest("https://" + TitleId + ".playfabapi.com/Client/" + method, "POST");
-            request.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(JsonUtility.ToJson(body)));
+            request.uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(body));
             request.downloadHandler = new DownloadHandlerBuffer(); request.SetRequestHeader("Content-Type", "application/json"); request.timeout = 15;
+            if (resume) request.SetRequestHeader("X-Authorization", ticket);
             activeRequest = request;
             yield return request.SendWebRequest();
             activeRequest = null;
@@ -83,13 +119,25 @@ namespace AbyssHunter.UI
             try { response = JsonUtility.FromJson<Response>(request.downloadHandler.text); } catch (Exception) { }
             IsBusy = false;
             if (request.result == UnityWebRequest.Result.ConnectionError) Message = "连接失败或请求超时，请检查网络后重试。";
-            else if (password == null && (response?.code == 200 || response?.error == "EmailAddressNotAvailable" || response?.error == "AccountNotFound" || response?.error == "NoContactEmailAddressFound" || response?.error == "EmailRecipientBlacklisted"))
-                Message = "若邮箱已注册，请检查收件箱及垃圾邮件，按邮件指引重置密码。";
-            else if (request.result == UnityWebRequest.Result.Success && response?.code == 200 && !string.IsNullOrEmpty(response.data?.PlayFabId))
+            else if (resume && (request.responseCode == 401 || response?.error is "InvalidSessionTicket" or "SessionTicketExpired" or "NotAuthenticated" or "AccountBanned"))
             {
-                PlayerId = response.data.PlayFabId;
+                ForgetLogin(); Message = "登录状态已失效，请重新输入邮箱和密码。";
+            }
+            else if (recovery && (response?.code == 200 || response?.error == "EmailAddressNotAvailable" || response?.error == "AccountNotFound" || response?.error == "NoContactEmailAddressFound" || response?.error == "EmailRecipientBlacklisted"))
+                Message = "若邮箱已注册，请检查收件箱及垃圾邮件，按邮件指引重置密码。";
+            else if (!recovery && request.result == UnityWebRequest.Result.Success && response?.code == 200 &&
+                     !string.IsNullOrWhiteSpace(resume ? response.data?.AccountInfo?.PlayFabId : response.data?.PlayFabId))
+            {
+                PlayerId = resume ? response.data.AccountInfo.PlayFabId : response.data.PlayFabId;
                 Progress = new AccountProgress(System.IO.Path.Combine(Application.persistentDataPath, "Accounts"), TitleId, PlayerId);
                 Message = Progress.Notice ?? "登录成功。";
+                if (!resume && SupportsRememberedLogin)
+                {
+                    bool saved = WindowsLoginTicket.Write(TitleId, response.data.SessionTicket);
+                    PlayerPrefs.SetInt(RememberKey, saved ? 1 : 0);
+                    PlayerPrefs.Save();
+                    if (!saved) Message = "已登录，本次登录状态无法保存到这台电脑。";
+                }
             }
             else Message = FriendlyError(response?.error);
             Changed?.Invoke();
@@ -106,7 +154,15 @@ namespace AbyssHunter.UI
         public void SignOut()
         {
             generation++; activeRequest?.Abort(); StopAllCoroutines(); activeRequest?.Dispose(); activeRequest = null;
+            ForgetLogin();
             IsBusy = false; PlayerId = null; Progress = null; Message = "已退出账号。"; Changed?.Invoke();
+        }
+        private void ForgetLogin()
+        {
+            if (!SupportsRememberedLogin || !HasTitle) return;
+            PlayerPrefs.DeleteKey(RememberKey);
+            PlayerPrefs.Save();
+            WindowsLoginTicket.Forget(TitleId);
         }
         private void OnDestroy() { activeRequest?.Abort(); StopAllCoroutines(); activeRequest?.Dispose(); activeRequest = null; if (instance == this) instance = null; }
     }
